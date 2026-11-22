@@ -9,7 +9,7 @@ aside button.active{background:#A9D6F0;color:#0A2540;font-weight:800}main{flex:1
 .card{background:#fff;border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 4px 16px rgba(10,37,64,.08)}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 input,select,textarea{width:100%;padding:13px 14px;border:1.5px solid #C9E6F7;border-radius:12px;margin:7px 0;background:#F7FBFF;font-size:16px;color:#0A2540}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#0A2540}
+input:focus,select,textarea:focus{outline:none;border-color:#0A2540}
 .btn{background:#0A2540;color:#fff;border:0;padding:13px;border-radius:12px;width:100%;font-weight:800;cursor:pointer;font-size:16px}
 .btn2{background:#A9D6F0;color:#0A2540;border:0;padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:700}
 .btnG{background:#16a34a;color:#fff;border:0;padding:13px;border-radius:12px;width:100%;font-weight:800;cursor:pointer}
@@ -32,16 +32,18 @@ const ADMIN_PASS='1111';
 let DOCTOR_ID=(_params.get('d')||localStorage.getItem('lastDoctor')||'barakat').toString().toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9\u0600-\u06FF\-_]/gi,'')||'barakat';
 if(!IS_ADMIN) localStorage.setItem('lastDoctor',DOCTOR_ID);
 function _docKey(k){return 'barakat_'+DOCTOR_ID+'_'+k}
-function _getDoc(k,fallback){return JSON.parse(localStorage.getItem(_docKey(k))||localStorage.getItem('barakat_'+k)||fallback)}
+function _getDoc(k,fallback){let v=localStorage.getItem(_docKey(k)); if(v) return JSON.parse(v); if(DOCTOR_ID==='barakat'){let old=localStorage.getItem('barakat_'+k); if(old) return JSON.parse(old);} return JSON.parse(fallback)}
 let doctorsRegistry=JSON.parse(localStorage.getItem('barakat_all_doctors')||'{}');
 function saveRegistry(){localStorage.setItem('barakat_all_doctors',JSON.stringify(doctorsRegistry))}
 function getDoctorInfo(id){
   if(!doctorsRegistry[id]){
     let now=Date.now();
     let exp = now+30*24*60*60*1000;
-    doctorsRegistry[id]={id:id,name:id,createdAt:now,expiresAt:exp,active:true};
+    doctorsRegistry[id]={id:id,name:id,createdAt:now,expiresAt:exp,active:true,passDoc:'12321',passSec:'2222'};
     saveRegistry();
   }
+  if(!doctorsRegistry[id].passDoc) doctorsRegistry[id].passDoc='12321';
+  if(!doctorsRegistry[id].passSec) doctorsRegistry[id].passSec='2222';
   return doctorsRegistry[id];
 }
 let myDoctor=getDoctorInfo(DOCTOR_ID);
@@ -52,18 +54,30 @@ try{
   let manifest={name:'عيادة بركات',short_name:'العيادة',start_url:location.pathname,display:'standalone',background_color:'#EAF6FF',theme_color:'#0A2540',icons:[{src:"data:image/svg+xml,[STRIPPED]",sizes:'512x512',type:'image/svg+xml',purpose:'any'}]};
   let mb=new Blob([JSON.stringify(manifest)],{type:'application/json'});let mu=URL.createObjectURL(mb);let lm=document.createElement('link');lm.rel='manifest';lm.href=mu;document.head.appendChild(lm);
   if('serviceWorker' in navigator){
-    let swCode=`self.addEventListener('install',e=>{e.waitUntil(caches.open('clinic-v2').then(c=>c.addAll([location.pathname||'/']).catch(()=>{}))});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match(location.pathname))))});`;
+    let swCode=`self.addEventListener('install',e=>{e.waitUntil(caches.open('clinic-v3').then(c=>c.addAll([location.pathname||'/']).catch(()=>{}))});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match(location.pathname))))});`;
     let swBlob=new Blob([swCode],{type:'text/javascript'});let swUrl=URL.createObjectURL(swBlob);navigator.serviceWorker.register(swUrl).catch(()=>{});
   }
 }catch(e){}
 </script>
 <script>
 let lang='ar',role=null,page='home',sel=0;
-let clinic=JSON.parse(localStorage.getItem(_docKey('clinic'))||localStorage.getItem('barakat_clinic')||'{"name":"عيادة بركات لطب الأسنان","doctor":"د. كريم بركات","doctorTitle":"أخصائي طب وجراحة الفم والأسنان","secName":"","passDoc":"12321","passSec":"2222"}');
+// إصلاح مهم: الدكتور الجديد مياخدش بيانات بركات أبدا
+let _clinicRaw = localStorage.getItem(_docKey('clinic'));
+let clinic;
+if(_clinicRaw){ clinic = JSON.parse(_clinicRaw); }
+else if(DOCTOR_ID==='barakat'){
+  clinic = JSON.parse(localStorage.getItem('barakat_clinic')||'{"name":"عيادة بركات لطب الأسنان","doctor":"د. كريم بركات","doctorTitle":"أخصائي طب وجراحة الفم والأسنان","secName":"","passDoc":"12321","passSec":"2222"}');
+} else {
+  clinic = {name: myDoctor.name || DOCTOR_ID, doctor: myDoctor.name || DOCTOR_ID, doctorTitle:'أخصائي طب وجراحة الفم والأسنان', secName:'', passDoc: myDoctor.passDoc||'12321', passSec: myDoctor.passSec||'2222'};
+  localStorage.setItem(_docKey('clinic'), JSON.stringify(clinic));
+}
+// لو الرقم السري في الريجستري مختلف عن العيادة، الريجستري هو الصح
+if(myDoctor.passDoc) clinic.passDoc = myDoctor.passDoc;
+if(myDoctor.passSec) clinic.passSec = myDoctor.passSec;
 let T={en:{dash:'Dashboard',patients:'Patients',appoint:'Appointments',stock:'Inventory',reports:'Reports',settings:'Settings',waiting:'Waiting List',logout:'Logout',today:'Today Patients',newAppt:'+ New Appointment',open:'Open File',checkIn:'Check In',checkOut:'Check Out',attTitle:'Attendance',addItem:'Add New Item',itemName:'Item name',qty:'Quantity',price:'Total Purchase Price',expDate:'Expiry Date',alertQty:'Alert when less than',add:'Add Item',current:'Current Stock',used:'Used',avail:'Available',low:'Almost Finished',back:'Back',visitHist:'Visit History',addVisit:'Add Visit',whatDone:'What was done?',plan:'Treatment Plan',approve:'Approve Plan',invoices:'Invoices',recordPay:'Record Payment',register:'Register Patient',name:'Name',phone:'Phone',save:'Save',searchOld:'Patient already exists!',openOld:'Open Old File',newPat:'New patient',reportsTitle:'Reports',secAtt:'Secretary Attendance',present:'Days Present',absent:'Days Absent',rate:'Attendance Rate',vacation:'Request Vacation',backup:'Backup',dailyClose:'Daily Closing',manualExp:'Manual Expense',whatsapp:'WhatsApp',privateNote:'Doctor Private Note',rating:'Patient Rating'},
 ar:{dash:'لوحة التحكم',patients:'المرضى',appoint:'المواعيد',stock:'المخزون',reports:'التقارير',settings:'الإعدادات',waiting:'قائمة الانتظار',logout:'تسجيل الخروج',today:'مرضى اليوم',newAppt:'+ موعد جديد',open:'فتح الملف',checkIn:'✅ تسجيل الحضور',checkOut:'تسجيل الانصراف',attTitle:'الحضور والانصراف',addItem:'إضافة صنف جديد',itemName:'اسم الصنف - مثال: بنج',qty:'الكمية',price:'سعر الشراء الكلي',expDate:'تاريخ الانتهاء',alertQty:'تنبيه لما يقل عن',add:'إضافة صنف',current:'المخزون الحالي',used:'استخدمت',avail:'✅ متوفر',low:'⚠️ قرب يخلص',back:'رجوع',visitHist:'سجل الزيارات',addVisit:'إضافة زيارة',whatDone:'ما تم في الزيارة دي؟',plan:'خطة العلاج',approve:'اعتماد خطة العلاج',invoices:'الفواتير',recordPay:'تسجيل دفع',register:'تسجيل مريض',name:'الاسم',phone:'الهاتف',save:'حفظ',searchOld:'المريض موجود بالفعل!',openOld:'فتح ملفه القديم',newPat:'✅ مريض جديد',reportsTitle:'التقارير',secAtt:'حضور السكرتيرة',present:'يوم حضور',absent:'يوم غياب',rate:'نسبة الحضور',vacation:'طلب إجازة',backup:'نسخة احتياطية',dailyClose:'قفل اليوم',manualExp:'مصروف يدوي - إيجار / كهربا',whatsapp:'💬 واتساب',privateNote:'ملاحظات الدكتور الخاصة - الدكتور بس',rating:'تقييم المريض'}};
 function t(k){return T[lang][k]||k}function L(a,e){return lang=='ar'?a:e}
-  </script>
+</script>
 <script>
 function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l=='ar'?'rtl':'ltr';render()}
 let patients=_getDoc('patients','[]');
@@ -75,6 +89,7 @@ function save(){localStorage.setItem(_docKey('patients'),JSON.stringify(patients
 function showLocked(){
   document.getElementById('app').innerHTML=`<div class="card" style="max-width:460px;margin:50px auto;text-align:center"><div style="font-size:60px">🔒</div><h2>اشتراكك خلص</h2><p>الشهر المجاني بتاع الدكتور <b>${DOCTOR_ID}</b> خلص.<br>كلم الإدارة عشان تجدد الاشتراك ويتفتح السيستم تاني.</p><p class="label">فاضل: 0 يوم | انتهى يوم ${new Date(myDoctor.expiresAt).toLocaleDateString('ar-EG')}</p><a href="https://wa.me/201159534097?text=${encodeURIComponent('عايز اجدد اشتراك عيادتي '+DOCTOR_ID)}" target="_blank"><button class="btnG">💬 كلم الإدارة واتساب</button></a><br><br><button class="btn2" onclick="location.href=location.pathname+'?admin=1'">دخول الإدارة</button></div>`;
 }
+  <script>
 let adminLogged=false;
 function renderAdmin(){
   if(!adminLogged){
@@ -83,18 +98,20 @@ function renderAdmin(){
   }
   let list=Object.values(doctorsRegistry);
   document.getElementById('app').innerHTML=`<header><div><b>👑 إدارة السيستم</b><br><small>بيع لكل الدكاترة من هنا</small></div><button class="btn2" onclick="location.href=location.pathname">رجوع لعيادتي</button></header><main>
-  <div class="card"><h3>➕ إضافة دكتور جديد</h3><input id="newDocId" placeholder="اسم الدكتور في اللينك - مثال: dr-ahmed"><input id="newDocName" placeholder="اسم العيادة - مثال: عيادة د. أحمد"><button class="btn" onclick="addDoctor()">إنشاء لينك + شهر مجاني</button></div>
+  <div class="card"><h3>➕ إضافة دكتور جديد</h3><input id="newDocId" placeholder="اسم الدكتور في اللينك - مثال: dr-ahmed"><input id="newDocName" placeholder="اسم العيادة - مثال: عيادة د. أحمد"><input id="newPassDoc" placeholder="رقم سري الدكتور - مثال: 5555"><input id="newPassSec" placeholder="رقم سري السكرتيرة - مثال: 6666"><button class="btn" onclick="addDoctor()">إنشاء لينك + شهر مجاني</button><p class="label">لو سيبتي الرقم السري فاضي هيبقى الدكتور 12321 والسكرتيرة 2222</p></div>
   <div class="card"><h3>الدكاترة (${list.length})</h3>${list.map(d=>{
     let left=Math.max(0,Math.ceil((d.expiresAt-Date.now())/86400000))+' يوم فاضل';
     let expired=Date.now()>d.expiresAt;
-    return `<div style="border:1px solid #EAF6FF;border-radius:12px;padding:12px;margin-bottom:10px"><b>${d.name||d.id}</b> <span style="font-size:12px">(${d.id})</span><br><span class="label">${left} | الحالة: ${d.active&&!expired?'✅ شغال':'🔒 مقفول'} | ينتهي: ${new Date(d.expiresAt).toLocaleDateString('ar-EG')}</span><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn2" onclick="renewDoctor('${d.id}')">🔄 تجديد شهر</button><button class="btn2" onclick="toggleDoctor('${d.id}')">${d.active?'🔒 قفل':'🔓 فتح'}</button><button class="btn2" onclick="copyLink('${d.id}')">📋 نسخ اللينك</button><button class="btn2" onclick="deleteDoctor('${d.id}')" style="color:#dc2626">🗑️ حذف</button></div><input readonly value="${doctorLink(d.id)}" onclick="this.select()" style="font-size:12px"></div>`
+    return `<div style="border:1px solid #EAF6FF;border-radius:12px;padding:12px;margin-bottom:10px"><b>${d.name||d.id}</b> <span style="font-size:12px">(${d.id})</span><br><span class="label">${left} | الحالة: ${d.active&&!expired?'✅ شغال':'🔒 مقفول'} | ينتهي: ${new Date(d.expiresAt).toLocaleDateString('ar-EG')}</span><br><span style="font-size:13px">🔑 دكتور: <b>${d.passDoc||'12321'}</b> | سكرتيرة: <b>${d.passSec||'2222'}</b></span><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn2" onclick="renewDoctor('${d.id}')">🔄 تجديد شهر</button><button class="btn2" onclick="toggleDoctor('${d.id}')">${d.active?'🔒 قفل':'🔓 فتح'}</button><button class="btn2" onclick="copyLink('${d.id}')">📋 نسخ اللينك</button><button class="btn2" onclick="fixDoctorClinic('${d.id}')">✨ إصلاح الاسم</button><button class="btn2" onclick="editDoctorPass('${d.id}')">🔑 تغيير الرقم السري</button><button class="btn2" onclick="deleteDoctor('${d.id}')" style="color:#dc2626">🗑️ حذف</button></div><input readonly value="${doctorLink(d.id)}" onclick="this.select()" style="font-size:12px"></div>`
   }).join('')||'<p>لسه مفيش دكاترة</p>'}</div></main>`;
 }
 function checkAdmin(){ if(document.getElementById('adminPw').value==ADMIN_PASS){adminLogged=true;renderAdmin()}else alert('كلمة سر الإدارة غلط') }
-function addDoctor(){ let id=document.getElementById('newDocId').value.trim().toLowerCase().replace(/\s+/g,'-'); let nm=document.getElementById('newDocName').value.trim()||id; if(!id){alert('اكتبي اسم الدكتور في اللينك');return} if(doctorsRegistry[id]){alert('الدكتور ده موجود بالفعل');return} doctorsRegistry[id]={id:id,name:nm,createdAt:Date.now(),expiresAt:Date.now()+30*86400000,active:true}; saveRegistry(); renderAdmin(); alert('اتعمل! لينكه: '+doctorLink(id)); }
+function addDoctor(){ let id=document.getElementById('newDocId').value.trim().toLowerCase().replace(/\s+/g,'-'); let nm=document.getElementById('newDocName').value.trim()||id; let pd=document.getElementById('newPassDoc').value.trim()||'12321'; let ps=document.getElementById('newPassSec').value.trim()||'2222'; if(!id){alert('اكتبي اسم الدكتور في اللينك');return} if(doctorsRegistry[id]){alert('الدكتور ده موجود بالفعل');return} doctorsRegistry[id]={id:id,name:nm,createdAt:Date.now(),expiresAt:Date.now()+30*86400000,active:true,passDoc:pd,passSec:ps}; saveRegistry(); let newClinic={name:nm,doctor:nm,doctorTitle:'أخصائي طب وجراحة الفم والأسنان',secName:'',passDoc:pd,passSec:ps}; localStorage.setItem('barakat_'+id+'_clinic',JSON.stringify(newClinic)); renderAdmin(); alert('اتعمل! \nاللينك: '+doctorLink(id)+'\nرقم الدكتور: '+pd+'\nرقم السكرتيرة: '+ps); }
+function fixDoctorClinic(id){ let d=doctorsRegistry[id]; if(!d) return; let fixed={name:d.name,doctor:d.name,doctorTitle:'أخصائي طب وجراحة الفم والأسنان',secName:'',passDoc:d.passDoc||'12321',passSec:d.passSec||'2222'}; localStorage.setItem('barakat_'+id+'_clinic',JSON.stringify(fixed)); if(id===DOCTOR_ID){clinic=fixed;} alert('اتصلح ✅\nالاسم بقى: '+d.name+'\nرقم الدكتور: '+fixed.passDoc); renderAdmin(); }
+function editDoctorPass(id){ let d=doctorsRegistry[id]; let nd=prompt('رقم سري الدكتور الجديد لـ '+d.name, d.passDoc||'12321'); if(nd==null) return; let ns=prompt('رقم سري السكرتيرة الجديد', d.passSec||'2222'); if(ns==null) return; d.passDoc=nd.trim()||'12321'; d.passSec=ns.trim()||'2222'; saveRegistry(); let cur=JSON.parse(localStorage.getItem('barakat_'+id+'_clinic')||'{}'); cur.passDoc=d.passDoc; cur.passSec=d.passSec; localStorage.setItem('barakat_'+id+'_clinic',JSON.stringify(cur)); alert('اتغير ✅'); renderAdmin(); }
 function renewDoctor(id){ doctorsRegistry[id].expiresAt=Math.max(Date.now(),doctorsRegistry[id].expiresAt)+30*86400000; doctorsRegistry[id].active=true; saveRegistry(); renderAdmin(); alert('اتجدد شهر ✅'); }
 function toggleDoctor(id){ doctorsRegistry[id].active=!doctorsRegistry[id].active; saveRegistry(); renderAdmin(); }
-function deleteDoctor(id){ if(confirm('متأكدة تحذفي '+id+' ؟')){delete doctorsRegistry[id]; saveRegistry(); renderAdmin();} }
+function deleteDoctor(id){ if(confirm('متأكدة تحذفي '+id+' ؟')){delete doctorsRegistry[id]; localStorage.removeItem('barakat_'+id+'_clinic'); saveRegistry(); renderAdmin();} }
 function copyLink(id){ let link=doctorLink(id); if(navigator.clipboard) navigator.clipboard.writeText(link).then(()=>alert('اتنسخ ✅\n'+link)); else {prompt('انسخي اللينك:',link)} }
 function login(){
   if(IS_ADMIN){renderAdmin();return}
@@ -124,7 +141,7 @@ function addPay(){let p=patients[sel],a=document.getElementById('payAmt').value;
 function savePrivate(){patients[sel].privateNote=document.getElementById('privNote').value;save();alert(L('اتحفظت','Saved'))}
 function saveRating(){patients[sel].rating=document.getElementById('rateSel').value;save();render()}
 </script>
-  <script>
+<script>
 function appointPage(){let all=[];patients.forEach((p,pi)=>{(p.appts||[]).forEach(a=>all.push({...a,pi:pi,name:p.name,phone:p.phone}))});all.sort((a,b)=>a.date.localeCompare(b.date));return `<div class="card"><h3>${t('newAppt')}</h3><select id="aPat">${patients.map((p,i)=>`<option value="${i}">${p.name} - ${p.phone}</option>`).join('')}</select><input id="aDate" type="date" value="${todayStr()}"><input id="aTime" type="time"><input id="aNote" placeholder="${L('ملاحظة','Note')}"><button class="btn" onclick="addAppt()">${t('save')}</button></div><div class="card"><h3>${t('appoint')}</h3>${all.map(a=>`<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee"><b>${a.date} ${a.time||''} - ${a.name}</b><span>${a.note||''} <button class="btn2" onclick="delAppt(${a.pi},'${a.date}','${a.time}')">❌</button></span></div>`).join('')||L('مفيش مواعيد','No appointments')}</div>`}
 function addAppt(){let pi=document.getElementById('aPat').value;if(pi==''||!patients[pi])return;patients[pi].appts.push({date:document.getElementById('aDate').value,time:document.getElementById('aTime').value,note:document.getElementById('aNote').value});save();render()}
 function delAppt(pi,d,ti){patients[pi].appts=patients[pi].appts.filter(a=>!(a.date==d&&a.time==ti));save();render()}
@@ -136,13 +153,12 @@ function reportsPage(){if(role!='doctor'){alert(L('التقارير للدكتو
 function addExp(){let a=document.getElementById('eAmt').value;if(!a)return;manualExps.push({date:todayStr(),amount:a,note:document.getElementById('eNote').value});save();render()}
 function backup(){let data={clinic:clinic,patients:patients,stock:stock,manualExps:manualExps,attendance:attendance,waitList:waitList,doctorId:DOCTOR_ID};let b=new Blob([JSON.stringify(data)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='barakat-backup-'+DOCTOR_ID+'-'+todayStr()+'.json';a.click()}
 function restore(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(d.patients)patients=d.patients;if(d.stock)stock=d.stock;if(d.manualExps)manualExps=d.manualExps;if(d.attendance)attendance=d.attendance;if(d.waitList)waitList=d.waitList;if(d.clinic)clinic=d.clinic;save();alert(L('تم استرجاع النسخة ✅','Restored'));render()}catch(err){alert(L('ملف غلط','Wrong file'))}};r.readAsText(f)}
-function settingsPage(){if(role!='doctor'){alert(L('الإعدادات للدكتور بس','Settings for Doctor only'));page='home';render();return}return `<div class="card"><h3>${t('settings')}</h3><input id="cName" value="${clinic.name}" placeholder="${L('اسم العيادة','Clinic name')}"><input id="cDoc" value="${clinic.doctor}" placeholder="${L('اسم الدكتور','Doctor')}"><input id="cTitle" value="${clinic.doctorTitle}" placeholder="${L('تخصص الدكتور','Title')}"><input id="cSec" value="${clinic.secName||''}" placeholder="${L('اسم السكرتيرة','Secretary name')}"><input id="cPassDoc" value="${clinic.passDoc}" placeholder="${L('كلمة سر الدكتور','Doctor password')}"><input id="cPassSec" value="${clinic.passSec}" placeholder="${L('كلمة سر السكرتيرة','Secretary password')}"><button class="btn" onclick="saveSettings()">${t('save')}</button><p class="label">لينك عيادتك: ${doctorLink(DOCTOR_ID)}</p></div>`}
-function saveSettings(){clinic.name=document.getElementById('cName').value;clinic.doctor=document.getElementById('cDoc').value;clinic.doctorTitle=document.getElementById('cTitle').value;clinic.secName=document.getElementById('cSec').value;clinic.passDoc=document.getElementById('cPassDoc').value;clinic.passSec=document.getElementById('cPassSec').value;save();alert(L('اتحفظت ✅','Saved'));render()}
-function waitingPage(){return `<div class="card"><h3>${t('waiting')}</h3><input id="wName" placeholder="${t('name')}"><input id="wPhone" placeholder="${t('phone')}"><button class="btn" onclick="addWait()">${t('save')}</button></div><div class="card">${waitList.length?waitList.map((w,i)=>`<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee"><b>${w.name} - ${w.phone}</b><button class="btn2" onclick="delWait(${i})">❌</button></div>`).join(''):`<p class="label">${L('مفيش حد في الانتظار','Empty')}</p>`}</div>`}
-function addWait(){let n=document.getElementById('wName').value;if(!n)return;waitList.push({name:n,phone:document.getElementById('wPhone').value});save();render()}
-function delWait(i){waitList.splice(i,1);save();render()}
-function dailyClose(){let inc=patients.reduce((s,p)=>s+(p.payments||[]).filter(py=>py.date==todayStr()).reduce((a,b)=>a+(+b.amount||0),0),0);alert(L('قفل اليوم - دخل النهارده: ','Daily Close - Today Income: ')+inc)}
-render();
+function settingsPage(){return `<div class="card"><h3>${t('settings')}</h3><label class="label">اسم العيادة</label><input id="setName" value="${clinic.name}"><label class="label">اسم الدكتور</label><input id="setDoctor" value="${clinic.doctor}"><label class="label">التخصص</label><input id="setTitle" value="${clinic.doctorTitle}"><label class="label">اسم السكرتيرة</label><input id="setSec" value="${clinic.secName||''}"><label class="label">رقم سري الدكتور</label><input id="setPassDoc" value="${clinic.passDoc}"><label class="label">رقم سري السكرتيرة</label><input id="setPassSec" value="${clinic.passSec}"><button class="btn" onclick="saveSettings()">حفظ الإعدادات</button></div><div class="card"><h3>لينك عيادتك</h3><input readonly value="${doctorLink(DOCTOR_ID)}" onclick="this.select()"><p class="label">ابعتي اللينك ده للدكتور والسكرتيرة</p></div>`}
+function saveSettings(){clinic.name=document.getElementById('setName').value;clinic.doctor=document.getElementById('setDoctor').value;clinic.doctorTitle=document.getElementById('setTitle').value;clinic.secName=document.getElementById('setSec').value;clinic.passDoc=document.getElementById('setPassDoc').value;clinic.passSec=document.getElementById('setPassSec').value; myDoctor.passDoc=clinic.passDoc; myDoctor.passSec=clinic.passSec; save(); alert('اتحفظت ✅'); render();}
+function waitingPage(){return `<div class="card"><h3>${t('waiting')}</h3><input id="wName" placeholder="اسم المريض"><input id="wPhone" placeholder="الهاتف"><button class="btn" onclick="addWait()">${t('save')}</button>${waitList.map((w,i)=>`<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee"><b>${w.name} - ${w.phone}</b><button class="btn2" onclick="delWait(${i})">❌</button></div>`).join('')}</div>`}
+function addWait(){let n=document.getElementById('wName').value; if(!n) return; waitList.push({name:n,phone:document.getElementById('wPhone').value}); save(); render();}
+function delWait(i){waitList.splice(i,1); save(); render();}
+function dailyClose(){let inc=patients.reduce((s,p)=>s+(p.payments||[]).reduce((a,b)=>a+(+b.amount||0),0),0); alert('قفل اليوم\nالدخل: '+inc+'\nعدد المرضى: '+patients.length);}
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore-compat.js"></script>
@@ -153,8 +169,9 @@ const db=firebase.firestore();
 let oldSave=save;
 let isLoadingFromCloud=false;
 save=function(){oldSave();if(isLoadingFromCloud)return;try{db.collection("clinic_data").doc(DOCTOR_ID).set({clinic:clinic,patients:patients,stock:stock,manualExps:manualExps,attendance:attendance,waitList:waitList,doctorId:DOCTOR_ID,updatedAt:new Date().toISOString()}).catch(e=>console.log('cloud save error',e));patients.forEach(p=>{db.collection("patients").doc(DOCTOR_ID+"_"+String(p.id)).set({...p,doctorId:DOCTOR_ID}).catch(e=>console.log(e))})}catch(e){console.log(e)}};
-try{ db.collection("doctors").doc(DOCTOR_ID).set({id:DOCTOR_ID,name:myDoctor.name,expiresAt:myDoctor.expiresAt,active:myDoctor.active,updatedAt:new Date().toISOString()},{merge:true}).catch(()=>{}); }catch(e){}
-db.collection("clinic_data").doc(DOCTOR_ID).get().then(doc=>{if(doc.exists){let d=doc.data();if(d){isLoadingFromCloud=true;if(d.patients&&d.patients.length>0)patients=d.patients;if(d.stock)stock=d.stock;if(d.manualExps)manualExps=d.manualExps;if(d.attendance)attendance=d.attendance;if(d.waitList)waitList=d.waitList;if(d.clinic)clinic=d.clinic;localStorage.setItem(_docKey('patients'),JSON.stringify(patients));localStorage.setItem(_docKey('stock'),JSON.stringify(stock));localStorage.setItem(_docKey('exps'),JSON.stringify(manualExps));localStorage.setItem(_docKey('att'),JSON.stringify(attendance));localStorage.setItem(_docKey('wait'),JSON.stringify(waitList));localStorage.setItem(_docKey('clinic'),JSON.stringify(clinic));isLoadingFromCloud=false;render()}}else{db.collection("patients").where("doctorId","==",DOCTOR_ID).get().then(snap=>{if(!snap.empty){let arr=[];snap.forEach(x=>arr.push(x.data()));if(arr.length>0){patients=arr;localStorage.setItem(_docKey('patients'),JSON.stringify(patients));render()}}})}}).catch(e=>console.log(e));
-db.collection("clinic_data").doc(DOCTOR_ID).onSnapshot(doc=>{if(!doc.exists)return;let d=doc.data();if(!d||isLoadingFromCloud)return;if(d.updatedAt&&d.patients){patients=d.patients;stock=d.stock||stock;manualExps=d.manualExps||manualExps;attendance=d.attendance||attendance;waitList=d.waitList||waitList;clinic=d.clinic||clinic;oldSave();render()}});
+try{ db.collection("doctors").doc(DOCTOR_ID).set({id:DOCTOR_ID,name:myDoctor.name,expiresAt:myDoctor.expiresAt,active:myDoctor.active,passDoc:myDoctor.passDoc,passSec:myDoctor.passSec,updatedAt:new Date().toISOString()},{merge:true}).catch(()=>{}); }catch(e){}
+db.collection("clinic_data").doc(DOCTOR_ID).get().then(doc=>{if(doc.exists){let d=doc.data();if(d){isLoadingFromCloud=true;if(d.patients&&d.patients.length>0)patients=d.patients;if(d.stock)stock=d.stock;if(d.manualExps)manualExps=d.manualExps;if(d.attendance)attendance=d.attendance;if(d.waitList)waitList=d.waitList;if(d.clinic){clinic=d.clinic; if(myDoctor.passDoc) clinic.passDoc=myDoctor.passDoc; if(myDoctor.passSec) clinic.passSec=myDoctor.passSec;} localStorage.setItem(_docKey('patients'),JSON.stringify(patients));localStorage.setItem(_docKey('stock'),JSON.stringify(stock));localStorage.setItem(_docKey('exps'),JSON.stringify(manualExps));localStorage.setItem(_docKey('att'),JSON.stringify(attendance));localStorage.setItem(_docKey('wait'),JSON.stringify(waitList));localStorage.setItem(_docKey('clinic'),JSON.stringify(clinic));isLoadingFromCloud=false;render()}}else{db.collection("patients").where("doctorId","==",DOCTOR_ID).get().then(snap=>{if(!snap.empty){let arr=[];snap.forEach(x=>arr.push(x.data()));if(arr.length>0){patients=arr;localStorage.setItem(_docKey('patients'),JSON.stringify(patients));render()}}})}}).catch(e=>console.log(e));
+db.collection("clinic_data").doc(DOCTOR_ID).onSnapshot(doc=>{if(!doc.exists)return;let d=doc.data();if(!d||isLoadingFromCloud)return;if(d.updatedAt&&d.patients){patients=d.patients;stock=d.stock||stock;manualExps=d.manualExps||manualExps;attendance=d.attendance||attendance;waitList=d.waitList||waitList;if(d.clinic){clinic=d.clinic; if(myDoctor.passDoc) clinic.passDoc=myDoctor.passDoc; if(myDoctor.passSec) clinic.passSec=myDoctor.passSec;} oldSave();render()}});
+login();
 </script>
 </body></html>
