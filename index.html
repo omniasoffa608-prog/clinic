@@ -175,5 +175,62 @@ function extendDoctor(id){
   var d = prompt('كام يوم عايزة تمدي؟', '30');
   if(d){ var exp = new Date(); exp.setDate(exp.getDate()+parseInt(d)); doctorsRegistry[id].expiresAt = exp.toISOString(); saveRegistry(); renderAdmin(); alert('تم التمديد'); }
 }
+  // مزامنة كاملة: الإدارة -> موبايل الدكتور
+(function(){
+  try{
+    if(typeof db==='undefined' || !db) return;
+
+    // 1- أي تعديل من الإدارة يتبعت للنت كله
+    var oldSave = window.saveRegistry;
+    window.saveRegistry = function(){
+      if(oldSave) oldSave();
+      try{
+        if(window.doctorsRegistry){
+          Object.keys(window.doctorsRegistry).forEach(function(id){
+            if(id==='barakat') return;
+            var d = window.doctorsRegistry[id];
+            db.collection("doctors").doc(id).set({
+              name: d.name,
+              password: d.password,
+              active: d.active,
+              expiresAt: d.expiresAt,
+              createdAt: d.createdAt || '',
+              updatedAt: new Date().toISOString()
+            }, {merge:true});
+          });
+        }
+      }catch(e){}
+    };
+
+    // 2- موبايل الدكتور يسمع كل التعديلات
+    if(window.DOCTOR_ID && window.DOCTOR_ID!=='barakat'){
+      db.collection("doctors").doc(window.DOCTOR_ID).onSnapshot(function(doc){
+        if(!doc.exists) return;
+        var cloud = doc.data();
+        try{
+          var local = JSON.parse(localStorage.getItem('barakat_doctor_'+window.DOCTOR_ID) || '{}');
+          var changed = false;
+          if(cloud.name && cloud.name!==local.name){ local.name=changed=true; }
+          if(cloud.password && cloud.password!==local.password){ local.password=changed=true; }
+          if(typeof cloud.active!=='undefined' && cloud.active!==local.active){ local.active=cloud.active; changed=true; }
+          if(cloud.expiresAt && cloud.expiresAt!==local.expiresAt){ local.expiresAt=cloud.expiresAt; changed=true; }
+          if(changed){
+            localStorage.setItem('barakat_doctor_'+window.DOCTOR_ID, JSON.stringify(local));
+            // لو الاسم اتغير حدثه في الشاشة
+            var nameEl = document.querySelector('.clinic-name, #clinicName, h1');
+            if(nameEl && cloud.name) nameEl.textContent = cloud.name;
+          }
+        }catch(e){}
+        // القفل والفتح
+        if(cloud.active === false){
+          if(document.body.innerHTML.indexOf('العيادة مقفولة')===-1){
+            document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;font-family:Arial;padding:20px;background:#fff"><div style="font-size:70px">🔒</div><h1 style="color:#c00">العيادة مقفولة</h1><p style="font-size:18px">تم قفل العيادة من الإدارة</p></div>';
+          }
+        }
+        if(cloud.active === true && document.body.innerHTML.indexOf('العيادة مقفولة')>-1){ location.reload(); }
+      });
+    }
+  }catch(e){}
+})();
 </script>
 </body></html>
