@@ -2,278 +2,103 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b3d6e">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omnia Clinic</title>
 <link rel="manifest" href="manifest.json">
-<title>Omnia Hamdy System</title>
 <style>
-*{box-sizing:border-box;font-family:system-ui,Tahoma}body{margin:0;background:#eaf6ff;color:#0f2b46}
-header{background:#0b3d6e;color:#fff;padding:12px;text-align:center}
-header h1{margin:0;font-size:20px}header p{margin:3px 0 0;opacity:.9;font-size:13px}
-.brand{background:#fff;color:#0b3d6e;display:inline-block;padding:4px 12px;border-radius:20px;font-weight:900;font-size:13px;margin-bottom:5px}
-.wrap{max-width:1100px;margin:auto;padding:12px}
-.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px #0001}
-input,select,textarea{width:100%;padding:11px;border:1px solid #cfe3f5;border-radius:10px;margin:5px 0;font-size:15px}
-button{border:0;border-radius:10px;padding:11px 14px;cursor:pointer;font-weight:700;background:#0b3d6e;color:#fff;margin:3px}
-button.g{background:#0ea47a}button.o{background:#f59e0b}button.r{background:#ef4444}
-.badge{padding:3px 8px;border-radius:20px;font-size:12px;background:#eef6ff}
-.hide{display:none}.small{font-size:13px;color:#555}
-.sync{position:fixed;bottom:10px;left:10px;background:#0b3d6e;color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;z-index:999}
+*{box-sizing:border-box;font-family:system-ui}
+body{margin:0;background:#f1f5f9;color:#0f172a}
+header{background:#0f766e;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
+header b{font-size:19px}
+header span{font-size:12px;opacity:.9;display:block}
+.btn{background:#fff;color:#0f766e;border:0;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer}
+nav{display:flex;gap:8px;padding:12px;overflow:auto;background:#fff;position:sticky;top:60px}
+nav button{border:1px solid #cbd5e1;background:#f8fafc;padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav button.active{background:#0f766e;color:#fff}
+main{padding:14px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px #0001}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.num{font-size:28px;font-weight:800;color:#0f766e}
+input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:10px;margin:6px 0}
+.save{background:#0f766e;color:#fff;border:0;padding:11px;border-radius:10px;width:100%;font-weight:700;cursor:pointer}
+.item{border-bottom:1px solid #e2e8f0;padding:10px 0;display:flex;justify-content:space-between}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div id="syncStatus" class="sync">● محفوظ على الجهاز</div>
-<header><div class="brand">Omnia Hamdy System</div><h1 id="clinicTitle">سيستم أمنية حمدي لإدارة عيادات الأسنان</h1><p id="clinicSub">نظام متكامل لكل عيادة - مرضى، مواعيد، مخزون، تقارير</p></header>
-<div class="wrap" id="app"></div>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<header>
+<div><b>💜 Omnia Clinic</b><span>عيادة أمنية - إدارة العيادة</span></div>
+<button class="btn" onclick="addApp()">+ حجز جديد</button>
+</header>
+<nav>
+<button class="active" onclick="show('dash',this)">لوحة التحكم</button>
+<button onclick="show('patients',this)">المرضى</button>
+<button onclick="show('apps',this)">المواعيد</button>
+<button onclick="show('bills',this)">الفواتير</button>
+</nav>
+<main>
+<div id="dash">
+<div class="grid">
+<div class="card"><div>مرضى اليوم</div><div class="num" id="c1">0</div></div>
+<div class="card"><div>إجمالي المرضى</div><div class="num" id="c2">0</div></div>
+<div class="card"><div>مواعيد اليوم</div><div class="num" id="c3">0</div></div>
+<div class="card"><div>إيراد اليوم</div><div class="num" id="c4">0 ج</div></div>
+</div>
+<div class="card"><b>أهلاً بيكي يا دكتورة أمنية ❤️</b><p>ده نظام عيادتك الجديد. ضيفي مريض من تاب المرضى، واحجزي من تاب المواعيد.</p></div>
+<div class="card"><b>مواعيد النهاردة</b><div id="todayList">لسه مفيش مواعيد</div></div>
+</div>
+<div id="patients" class="hidden">
+<div class="card"><b>إضافة مريض جديد</b>
+<input id="pName" placeholder="اسم المريض">
+<input id="pPhone" placeholder="رقم التليفون">
+<input id="pAge" placeholder="السن" type="number">
+<button class="save" onclick="addPatient()">حفظ المريض</button>
+</div>
+<div class="card"><b>قائمة المرضى</b><div id="pList"></div></div>
+</div>
+
+<div id="apps" class="hidden">
+<div class="card"><b>حجز موعد جديد</b>
+<input id="aName" placeholder="اسم المريض">
+<input id="aDate" type="date">
+<input id="aTime" type="time">
+<select id="aType"><option>كشف</option><option>متابعة</option><option>استشارة</option></select>
+<button class="save" onclick="saveApp()">حفظ الحجز</button>
+</div>
+<div class="card"><b>كل المواعيد</b><div id="aList"></div></div>
+</div>
+
+<div id="bills" class="hidden">
+<div class="card"><b>فاتورة جديدة</b>
+<input id="bName" placeholder="اسم المريض">
+<input id="bAmount" placeholder="المبلغ" type="number">
+<button class="save" onclick="addBill()">حفظ الفاتورة</button>
+</div>
+<div class="card"><b>الفواتير</b><div id="bList"></div></div>
+</div>
+</main>
 <script>
-var firebaseConfig = {
-  apiKey: "AIzaSyC_PF2THIRdiK_Fi2lY7QelrpI4yqniFa4",
-  authDomain: "buba-clinic-app.firebaseapp.com",
-  projectId: "buba-clinic-app",
-  storageBucket: "buba-clinic-app.firebasestorage.app",
-  messagingSenderId: "403832390931",
-  appId: "1:403832390931:web:907f24b3b74083324106e6"
-};
-var db = null;
-try{
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  db.enablePersistence().catch(function(){});
-  document.getElementById('syncStatus').textContent = '● متصل بالسحابة';
-}catch(e){ db = null; }
-var BASE = location.origin + location.pathname;
-function qs(s){ return document.querySelector(s); }
-function getDoctors(){ try{ return JSON.parse(localStorage.getItem('omnia_doctors') || '[]'); }catch(e){ return []; } }
-function saveDoctors(d){
-  localStorage.setItem('omnia_doctors', JSON.stringify(d));
-  if(db){ db.collection('omnia_doctors').doc('all').set({list:d}).catch(function(){}); }
+let patients=JSON.parse(localStorage.getItem('p')||'[]');
+let apps=JSON.parse(localStorage.getItem('a')||'[]');
+let bills=JSON.parse(localStorage.getItem('b')||'[]');
+function show(id,btn){['dash','patients','apps','bills'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function saveAll(){localStorage.setItem('p',JSON.stringify(patients));localStorage.setItem('a',JSON.stringify(apps));localStorage.setItem('b',JSON.stringify(bills));render()}
+function addPatient(){let n=document.getElementById('pName').value;if(!n)return alert('اكتبي الاسم');patients.push({name:n,phone:document.getElementById('pPhone').value,age:document.getElementById('pAge').value});saveAll();alert('اتحفظ ❤️')}
+function saveApp(){let n=document.getElementById('aName').value;if(!n)return alert('اكتبي الاسم');apps.push({name:n,date:document.getElementById('aDate').value,time:document.getElementById('aTime').value,type:document.getElementById('aType').value});saveAll();alert('اتحجز ❤️')}
+function addApp(){show('apps',document.querySelectorAll('nav button')[2])}
+function addBill(){let n=document.getElementById('bName').value,a=document.getElementById('bAmount').value;if(!n||!a)return alert('كملي البيانات');bills.push({name:n,amount:a});saveAll();alert('اتحفظت ❤️')}
+function render(){
+document.getElementById('c2').textContent=patients.length;
+document.getElementById('c3').textContent=apps.length;
+document.getElementById('c1').textContent=patients.length;
+let sum=0;bills.forEach(b=>sum+=Number(b.amount||0));document.getElementById('c4').textContent=sum+' ج';
+document.getElementById('pList').innerHTML=patients.length?patients.map(p=>'<div class="item"><span>'+p.name+' - '+p.phone+'</span><b>'+(p.age||'')+'</b></div>').join(''):'لسه مفيش مرضى';
+document.getElementById('aList').innerHTML=apps.length?apps.map(a=>'<div class="item"><span>'+a.name+' - '+a.type+'</span><b>'+a.date+' '+a.time+'</b></div>').join(''):'لسه مفيش مواعيد';
+document.getElementById('todayList').innerHTML=apps.length?apps.map(a=>'<div class="item"><span>'+a.name+'</span><b>'+a.time+'</b></div>').join(''):'لسه مفيش مواعيد';
+document.getElementById('bList').innerHTML=bills.length?bills.map(b=>'<div class="item"><span>'+b.name+'</span><b>'+b.amount+' ج</b></div>').join(''):'لسه مفيش فواتير';
 }
-function getData(id){ try{ return JSON.parse(localStorage.getItem('omnia_data_' + id) || '{"patients":[],"appoints":[],"stock":[],"expenses":[],"attendance":[],"wait":[]}'); }catch(e){ return {patients:[],appoints:[],stock:[],expenses:[],attendance:[],wait:[]}; } }
-function saveData(id,d){
-  localStorage.setItem('omnia_data_' + id, JSON.stringify(d));
-  if(db){
-    document.getElementById('syncStatus').textContent = '● جاري الرفع...';
-    db.collection('omnia_data').doc(id).set(d).then(function(){
-      document.getElementById('syncStatus').textContent = '● محفوظ على السحابة ✓';
-    }).catch(function(){ document.getElementById('syncStatus').textContent = '● محفوظ على الجهاز (مفيش نت)'; });
-  }
-}
-function daysLeft(doc){ return Math.ceil((doc.expiry - Date.now()) / 86400000); }
-if(db){
-  db.collection('omnia_doctors').doc('all').get().then(function(doc){
-    if(doc.exists && doc.data().list && doc.data().list.length>0){
-      localStorage.setItem('omnia_doctors', JSON.stringify(doc.data().list));
-      location.reload();
-    }
-  }).catch(function(){});
-}
-var docs0 = getDoctors();
-if(!docs0.find(function(x){ return x.id == 'dr-barakat'; })){
-  docs0.push({id:'dr-barakat',name:'عيادة د. كريم بركات',doctor:'د. كريم بركات',specialty:'أخصائي طب وجراحة الفم والأسنان',secretary:'سكرتيرة',passDoc:'1234',passSec:'1111',created:Date.now(),expiry:Date.now()+30*86400000,locked:false});
-  saveDoctors(docs0);
-}
-var params = new URLSearchParams(location.search);
-var view = params.get('admin') ? 'admin' : (params.get('d') || 'dr-barakat');
-var currentDoc = null;
-var role = 'doctor';
-var currentPatient = null;
-if(view == 'admin'){
-  document.getElementById('app').innerHTML = '<div class="card"><h2>لوحة إدارة أمنية حمدي</h2><p class="small">اللينك ده بتاعك انتي بس يا أمنية</p><p>لينك الإدارة: <b>' + BASE + '?admin=1</b></p><input id="apass" type="password" placeholder="كلمة سر الإدارة"><button onclick="adminLogin()">دخول</button><div id="adminBox" class="hide"></div></div>';
-  window.adminLogin = function(){
-    if(qs('#apass').value != '1111'){ alert('كلمة السر غلط'); return; }
-    qs('#adminBox').classList.remove('hide');
-    renderAdmin();
-  };
-  window.renderAdmin = function(){
-    var docs = getDoctors();
-    var rows = '';
-    for(var i=0;i<docs.length;i++){
-      var d = docs[i];
-      rows += '<tr><td><b>' + d.name + '</b><br>' + d.doctor + '<br><span class="small">' + BASE + '?d=' + d.id + '<br>فاضل ' + daysLeft(d) + ' يوم - ' + (d.locked ? 'مقفول' : 'شغال') + '</span></td><td><button class="g" onclick="renewDoc(' + i + ')">تجديد شهر</button><button class="o" onclick="toggleDoc(' + i + ')">' + (d.locked ? 'فتح' : 'قفل') + '</button><button onclick="copyLink(\'' + d.id + '\')">نسخ اللينك</button><button class="r" onclick="delDoc(' + i + ')">حذف</button></td></tr>';
-    }
-    qs('#adminBox').innerHTML = '<h3>اضافة دكتور جديد</h3><input id="nid" placeholder="اكتبي id للدكتور مثال dr-ahmed"><input id="nname" placeholder="اسم العيادة مثال عيادة د. أحمد"><input id="ndoc" placeholder="اسم الدكتور مثال د. أحمد"><button class="g" onclick="addDoc()">انشاء الدكتور</button><h3>كل الدكاترة عندك</h3><table>' + rows + '</table>';
-  };
-  window.addDoc = function(){
-    var id = qs('#nid').value.trim();
-    var name = qs('#nname').value.trim();
-    var doc = qs('#ndoc').value.trim() || name;
-    if(!id || !name){ alert('كملي البيانات'); return; }
-    var docs = getDoctors();
-    if(docs.find(function(x){ return x.id == id; })){ alert('موجود'); return; }
-    docs.push({id:id,name:name,doctor:doc,specialty:'طبيب أسنان',secretary:'سكرتيرة',passDoc:'1234',passSec:'1111',created:Date.now(),expiry:Date.now()+30*86400000,locked:false});
-    saveDoctors(docs);
-    alert('اتعمل! اللينك بتاعه: ' + BASE + '?d=' + id);
-    renderAdmin();
-  };
-  window.renewDoc = function(i){ var d=getDoctors(); d[i].expiry=Date.now()+30*86400000; d[i].locked=false; saveDoctors(d); renderAdmin(); };
-  window.toggleDoc = function(i){ var d=getDoctors(); d[i].locked=!d[i].locked; saveDoctors(d); renderAdmin(); };
-  window.delDoc = function(i){ if(!confirm('متأكدة؟')) return; var d=getDoctors(); d.splice(i,1); saveDoctors(d); renderAdmin(); };
-  window.copyLink = function(id){ navigator.clipboard.writeText(BASE + '?d=' + id); alert('اتنسخ اللينك - ابعتيه للدكتور'); };
-} else {
-  var allDocs = getDoctors();
-  for(var k=0;k<allDocs.length;k++){ if(allDocs[k].id == view){ currentDoc = allDocs[k]; } }
-  if(!currentDoc){
-    document.getElementById('app').innerHTML = '<div class="card"><h2>العيادة مش موجودة</h2><p>كلمي أمنية حمدي</p></div>';
-  } else if(currentDoc.locked || daysLeft(currentDoc) <= 0){
-    document.getElementById('app').innerHTML = '<div class="card" style="text-align:center"><h2>اشتراكك خلص</h2><p>كلمي الإدارة عشان تجددي</p><p>Omnia Hamdy System</p><button class="g" onclick="window.open(\'https://wa.me/201159534097\')">كلمي أمنية حمدي واتساب</button></div>';
-  } else {
-    document.getElementById('app').innerHTML = '<div class="card" style="text-align:center"><div class="brand">Omnia Hamdy System</div><h2>' + currentDoc.name + '</h2><p>' + currentDoc.doctor + '<br>' + currentDoc.specialty + '</p><p><span class="badge">فاضل ' + daysLeft(currentDoc) + ' يوم مجاني</span></p><select id="roleSel"><option value="doctor">أنا الدكتور</option><option value="secretary">أنا السكرتيرة</option></select><input id="loginPass" type="password" placeholder="كلمة السر - اسألي أمنية"><button class="g" onclick="doLogin()">دخول</button><p class="small">لو نسيتي الباسوورد كلمي أمنية حمدي</p></div>';
-    window.doLogin = function(){
-      var r = qs('#roleSel').value;
-      var p = qs('#loginPass').value;
-      var ok = (r == 'doctor' && p == currentDoc.passDoc) || (r == 'secretary' && p == currentDoc.passSec);
-      if(!ok){ alert('كلمة السر غلط'); return; }
-      role = r;
-      renderApp();
-    };
-  }
-}
-</script>
-<style>
-.layout{display:flex;gap:12px;align-items:flex-start}.sidebar{width:230px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 2px 10px #0001;flex-shrink:0}.sidebar button{display:block;width:100%;text-align:right;background:#eef6ff;color:#0b3d6e;margin:4px 0}.sidebar button.on{background:#0b3d6e;color:#fff}.main{flex:1;min-width:0}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.stat{background:#f0f8ff;border-radius:14px;padding:12px;text-align:center}.stat b{font-size:24px;display:block}.patient{border:1px solid #e2eef8;border-radius:12px;padding:10px;margin:6px 0}.tooth{width:38px;height:42px;border:2px solid #0b3d6e;border-radius:10px 10px 14px 14px;display:inline-flex;align-items:center;justify-content:center;margin:3px;cursor:pointer;font-weight:800;background:#fff}.visit{border:1px solid #dbeafe;border-radius:12px;margin:6px 0;overflow:hidden}.visitHead{background:#eff6ff;padding:10px;cursor:pointer;font-weight:700}.visitBody{padding:10px;display:none}.visitBody.open{display:block}.invBox{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px;margin:6px 0}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #eee;padding:8px;text-align:right;font-size:14px}@media(max-width:700px){.layout{flex-direction:column}.sidebar{width:100%}.sidebar button{display:inline-block;width:auto}.row,.row3{grid-template-columns:1fr}}
-</style>
-<script>
-function renderApp(){
-  if(db && currentDoc){
-    db.collection('omnia_data').doc(currentDoc.id).get().then(function(doc){
-      if(doc.exists){
-        var cloud = doc.data();
-        var local = getData(currentDoc.id);
-        if((cloud.patients||[]).length > (local.patients||[]).length){
-          localStorage.setItem('omnia_data_' + currentDoc.id, JSON.stringify(cloud));
-          renderApp();
-        }
-      }
-    }).catch(function(){});
-  }
-  var d = getData(currentDoc.id);
-  var today = new Date().toISOString().slice(0,10);
-  var todayPatients = 0;
-  for(var i=0;i<d.patients.length;i++){ if(d.patients[i].created && d.patients[i].created.indexOf(today)==0){ todayPatients++; } }
-  var income = 0;
-  for(var a=0;a<d.patients.length;a++){ var invs=d.patients[a].invoices || []; for(var b=0;b<invs.length;b++){ income += (+invs[b].paid || 0); } }
-  var exp = 0;
-  for(var e=0;e<d.expenses.length;e++){ exp += (+d.expenses[e].amount || 0); }
-  var visits = 0;
-  for(var v=0;v<d.patients.length;v++){ visits += (d.patients[v].visits || []).length; }
-  qs('#clinicTitle').textContent = currentDoc.name;
-  qs('#clinicSub').textContent = 'Omnia Hamdy System | ' + currentDoc.doctor;
-  var secBox = '';
-  if(role == 'secretary'){
-    var att = '';
-    for(var at=0;at<d.attendance.slice(-5).length;at++){ att += d.attendance.slice(-5)[at].date + ' - ' + d.attendance.slice(-5)[at].type + '<br>'; }
-    secBox = '<div class="card"><h3>حضور وانصراف - للسكرتيرة بس</h3><button class="g" onclick="attend(\'حضور\')">حضور</button><button class="r" onclick="attend(\'انصراف\')">انصراف</button><button class="o" onclick="attend(\'اجازة\')">اجازة اليوم</button><p class="small">' + att + '</p></div>';
-  }
-  var reportBox = '<p>التقارير للدكتور بس</p>';
-  if(role == 'doctor'){ reportBox = '<div class="card"><h3>التقارير - للدكتور بس</h3><p>المدفوع: ' + income + ' ج | المصاريف: ' + exp + ' ج | الصافي: ' + (income - exp) + ' ج</p><p>عدد المرضى: ' + d.patients.length + ' | عدد الزيارات: ' + visits + '</p><hr><input id="expName" placeholder="مصروف: إيجار، كهربا"><input id="expAmt" type="number" placeholder="المبلغ"><button onclick="addExpense()">إضافة مصروف</button><hr><button class="g" onclick="backup()">تحميل نسخة احتياطية</button><input type="file" onchange="restore(event)"></div>'; }
-  var settingsBox = '<p>الإعدادات للدكتور بس</p>';
-  if(role == 'doctor'){ settingsBox = '<div class="card"><h3>إعدادات العيادة</h3><input id="setClinic" value="' + currentDoc.name + '"><input id="setDoc" value="' + currentDoc.doctor + '"><input id="setSpec" value="' + currentDoc.specialty + '"><input id="setSec" value="' + currentDoc.secretary + '"><input id="setPassDoc" value="' + currentDoc.passDoc + '"><input id="setPassSec" value="' + currentDoc.passSec + '"><button class="g" onclick="saveSettings()">حفظ</button></div>'; }
-  var waitList = '';
-  for(var w=0;w<d.wait.length;w++){ waitList += '<div>• ' + d.wait[w] + '</div>'; }
-  if(!waitList){ waitList = 'مفيش حد مستني'; }
-  var lastPatients = '';
-  var last5 = d.patients.slice(-5);
-  for(var lp=0;lp<last5.length;lp++){ lastPatients += '<div>' + last5[lp].name + ' - ' + last5[lp].phone + ' - زياراته: ' + (last5[lp].visits || []).length + '</div>'; }
-  if(!lastPatients){ lastPatients = 'مفيش مرضى'; }
-  var appointList = '';
-  for(var ap=0;ap<d.appoints.length;ap++){ appointList += '<div>' + d.appoints[ap].date + ' ' + d.appoints[ap].time + ' - ' + d.appoints[ap].name + ' - ' + d.appoints[ap].note + ' <button class="r" onclick="delAppoint(' + ap + ')">حذف</button></div>'; }
-  if(!appointList){ appointList = 'مفيش مواعيد'; }
-  var stockList = '';
-  for(var st=0;st<d.stock.length;st++){ var s=d.stock[st]; stockList += '<div class="patient">' + s.name + ' - الكمية: ' + s.qty + ' ' + (s.qty <= s.min ? 'قرب يخلص' : '') + ' ' + (s.exp && s.exp < today ? 'منتهي' : '') + ' <button onclick="useStock(' + st + ')">-1 استخدمت</button> <button class="r" onclick="delStock(' + st + ')">حذف</button></div>'; }
-  if(!stockList){ stockList = 'المخزون فاضي'; }
-  var waitBtns = '';
-  for(var wb=0;wb<d.wait.length;wb++){ waitBtns += '<div>' + d.wait[wb] + ' <button class="g" onclick="doneWait(' + wb + ')">دخل</button></div>'; }
-  if(!waitBtns){ waitBtns = '<p>مفيش حد مستني</p>'; }
-  var patOptions = '';
-  for(var po=0;po<d.patients.length;po++){ patOptions += '<option value="' + d.patients[po].phone + '">' + d.patients[po].name + '</option>'; }
-  var welcomeName = (role == 'doctor') ? currentDoc.doctor : 'سكرتيرة ' + currentDoc.secretary;
-  qs('#app').innerHTML = '<div class="card" style="text-align:center"><h2 style="margin:0">أهلاً ' + welcomeName + '</h2><p style="margin:4px 0">' + currentDoc.name + ' | فاضل ' + daysLeft(currentDoc) + ' يوم | مرضى اليوم: ' + todayPatients + ' | في الانتظار: ' + d.wait.length + '</p><button class="g" onclick="installApp()">📲 ثبتي التطبيق على الشاشة</button></div><div class="layout"><div class="sidebar"><b>لوحة التحكم</b><br><span class="small">Omnia Hamdy System</span><button class="on" onclick="showTab(\'home\',this)">الرئيسية</button><button onclick="showTab(\'patients\',this)">المرضى - ' + d.patients.length + '</button><button onclick="showTab(\'wait\',this)">الانتظار - ' + d.wait.length + '</button><button onclick="showTab(\'appoints\',this)">المواعيد - ' + d.appoints.length + '</button><button onclick="showTab(\'stock\',this)">المخزون - ' + d.stock.length + '</button><button onclick="showTab(\'reports\',this)">التقارير</button><button onclick="showTab(\'settings\',this)">الإعدادات</button><button onclick="location.reload()">خروج</button></div><div class="main"><div id="tab-home" class="tab"><div class="row3"><div class="card stat"><b>' + d.patients.length + '</b>إجمالي المرضى</div><div class="card stat"><b>' + todayPatients + '</b>مرضى اليوم</div><div class="card stat"><b>' + visits + '</b>عدد الزيارات</div></div><div class="row"><div class="card stat"><b>' + income + ' ج</b>المدفوع</div><div class="card stat"><b>' + exp + ' ج</b>المصاريف</div></div>' + secBox + '<div class="card"><h3>الناس اللي مستنية دلوقتي</h3>' + waitList + '<h3>آخر المرضى</h3>' + lastPatients + '</div></div><div id="tab-patients" class="tab hide"><div class="card"><h3>إضافة مريض</h3><input id="pname" placeholder="اسم المريض"><input id="pphone" placeholder="رقم التليفون"><div class="row"><input id="page" placeholder="السن"><input id="pgender" placeholder="النوع"><input id="paddr" placeholder="العنوان"></div><button class="g" onclick="addPatient()">حفظ المريض</button></div><input id="searchP" placeholder="ابحثي بالاسم أو التليفون" oninput="renderPatients()"><div id="plist"></div></div><div id="tab-appoints" class="tab hide"><div class="card"><h3>حجز موعد</h3><select id="aPat">' + patOptions + '</select><input id="aDate" type="date"><input id="aTime" type="time"><input id="aNote" placeholder="ملاحظة"><button class="g" onclick="addAppoint()">حجز</button></div><div class="card">' + appointList + '</div></div><div id="tab-stock" class="tab hide"><div class="card"><h3>إضافة صنف</h3><input id="sname" placeholder="اسم الصنف"><div class="row"><input id="sqty" type="number" placeholder="الكمية"><input id="sprice" type="number" placeholder="سعر الشراء"><input id="sexp" type="date"><input id="smin" type="number" placeholder="تنبيه لما يقل عن"></div><button class="g" onclick="addStock()">إضافة</button></div><div class="card">' + stockList + '</div></div><div id="tab-reports" class="tab hide">' + reportBox + '</div><div id="tab-settings" class="tab hide">' + settingsBox + '</div><div id="tab-wait" class="tab hide"><div class="card"><h3>قائمة الانتظار</h3><input id="wname" placeholder="اسم المريض المستني"><button class="g" onclick="addWait()">إضافة للانتظار</button>' + waitBtns + '</div></div><div id="patientModal"></div></div></div>';
-  renderPatients();
-}
-window.showTab = function(id,btn){ var tabs=document.querySelectorAll('.tab'); for(var i=0;i<tabs.length;i++){ tabs[i].classList.add('hide'); } document.getElementById('tab-' + id).classList.remove('hide'); var btns=document.querySelectorAll('.sidebar button'); for(var j=0;j<btns.length;j++){ btns[j].classList.remove('on'); } if(btn){ btn.classList.add('on'); } };
-window.renderPatients = function(){
-  var d=getData(currentDoc.id);
-  var q='';
-  if(qs('#searchP')){ q = qs('#searchP').value.toLowerCase(); }
-  var html='';
-  for(var i=0;i<d.patients.length;i++){
-    var p=d.patients[i];
-    if(p.name.toLowerCase().indexOf(q) < 0 && p.phone.indexOf(q) < 0){ continue; }
-    var paid=0, remain=0;
-    for(var k=0;k<(p.invoices || []).length;k++){ paid += (+p.invoices[k].paid || 0); remain += ((+p.invoices[k].total || 0) - (+p.invoices[k].paid || 0)); }
-    html += '<div class="patient"><b>' + p.name + '</b> - ' + p.phone + ' - ' + p.age + ' سنة - ' + (p.address || '') + '<br><span class="small">عدد الزيارات: ' + (p.visits || []).length + ' | دفع: ' + paid + ' ج | تبقى: ' + remain + ' ج</span><br><button onclick="openPatient(' + i + ')">فتح الملف</button><button class="r" onclick="delPatient(' + i + ')">حذف</button></div>';
-  }
-  qs('#plist').innerHTML = html || '<p>مفيش مرضى</p>';
-};
-window.addPatient = function(){
-  var name=qs('#pname').value.trim();
-  var phone=qs('#pphone').value.trim();
-  if(!name || !phone){ alert('الاسم والتليفون لازم'); return; }
-  var d=getData(currentDoc.id);
-  for(var i=0;i<d.patients.length;i++){ if(d.patients[i].phone == phone){ alert('المريض موجود بالفعل! هيفتح ملفه القديم'); openPatient(i); return; } }
-  d.patients.push({name:name,phone:phone,age:qs('#page').value,gender:qs('#pgender').value,address:qs('#paddr').value,created:new Date().toISOString(),teeth:{},visits:[],plan:'',invoices:[],notes:''});
-  saveData(currentDoc.id,d);
-  renderApp();
-};
-</script>
-<script>
-window.openPatient = function(i){
-  var d=getData(currentDoc.id);
-  var p=d.patients[i];
-  currentPatient=i;
-  var teethHtml='';
-  for(var t=1;t<=32;t++){ var c=p.teeth[t] || '#fff'; teethHtml += '<div class="tooth" style="background:' + c + '" onclick="toggleTooth(' + t + ')">' + t + '</div>'; }
-  var visitsHtml='';
-  for(var vi=0;vi<(p.visits || []).length;vi++){
-    var v=p.visits[vi];
-    visitsHtml += '<div class="visit"><div class="visitHead" onclick="document.getElementById(\'vb' + vi + '\').classList.toggle(\'open\')"><span>الزيارة رقم ' + (vi+1) + ' - ' + (v.date || '') + '</span><span> اضغطي عشان تشوفي عملنا إيه</span></div><div class="visitBody" id="vb' + vi + '"><textarea id="visitTxt' + vi + '" placeholder="اكتبي عملنا إيه في الزيارة دي">' + (v.text || '') + '</textarea><button class="g" onclick="saveVisit(' + vi + ')">حفظ الزيارة ' + (vi+1) + '</button></div></div>';
-  }
-  var invHtml='';
-  for(var ii=0;ii<(p.invoices || []).length;ii++){
-    var inv=p.invoices[ii];
-    var total=+inv.total || 0;
-    var paid=+inv.paid || 0;
-    var remain=total-paid;
-    invHtml += '<div class="invBox"><b>' + inv.desc + '</b><br>المبلغ الأصلي: ' + total + ' ج | دفع كام: ' + paid + ' ج | تبقى كام: <b>' + remain + ' ج</b> ' + (remain==0 ? 'خالص' : '') + '</div>';
-  }
-  var notesBox = '<p>مش ظاهرة للسكرتيرة</p>';
-  if(role == 'doctor'){ notesBox = '<textarea id="notesTxt">' + (p.notes || '') + '</textarea><button onclick="saveNotes()">حفظ</button>'; }
-  qs('#patientModal').innerHTML = '<div class="card"><h3>ملف ' + p.name + '</h3><p>' + p.phone + ' | ' + p.age + ' | ' + p.address + ' | ' + p.gender + ' | دي الزيارة الكام؟ ' + ((p.visits || []).length + 1) + '</p><h4>خريطة الأسنان - 32 سنة</h4><p class="small">أبيض سليم | أزرق حشو | أحمر خلع | أصفر محتاج علاج</p>' + teethHtml + '<h4>سجل الزيارات (' + (p.visits || []).length + ')</h4>' + (visitsHtml || 'لا يوجد زيارات') + '<button class="g" onclick="addVisit()">+ إضافة زيارة جديدة</button><h4>خطة العلاج</h4><textarea id="planTxt">' + (p.plan || '') + '</textarea><button onclick="savePlan()">اعتماد خطة العلاج</button><h4>الفواتير - دفع قد إيه / فاضل قد إيه</h4>' + invHtml + '<input id="invDesc" placeholder="البيان: تقويم، حشو"><input id="invTotal" type="number" placeholder="المبلغ الأصلي كام؟"><input id="invPaid" type="number" placeholder="دفع كام؟"><button onclick="addInvoice()">إضافة فاتورة</button><h4>ملاحظات الدكتور الخاصة</h4>' + notesBox + '<br><button class="r" onclick="closePatient()">إغلاق الملف</button></div>';
-  window.scrollTo(0,0);
-};
-window.toggleTooth = function(t){ var d=getData(currentDoc.id); var p=d.patients[currentPatient]; var colors=['#fff','#3b82f6','#ef4444','#facc15']; var cur=colors.indexOf(p.teeth[t] || '#fff'); p.teeth[t]=colors[(cur+1)%4]; saveData(currentDoc.id,d); openPatient(currentPatient); };
-window.addVisit = function(){ var d=getData(currentDoc.id); d.patients[currentPatient].visits.push({date:new Date().toLocaleDateString('ar-EG'),text:''}); saveData(currentDoc.id,d); openPatient(currentPatient); };
-window.saveVisit = function(vi){ var d=getData(currentDoc.id); d.patients[currentPatient].visits[vi].text=qs('#visitTxt'+vi).value; saveData(currentDoc.id,d); alert('اتحفظت الزيارة رقم ' + (vi+1)); };
-window.savePlan = function(){ var d=getData(currentDoc.id); d.patients[currentPatient].plan=qs('#planTxt').value; saveData(currentDoc.id,d); alert('تم اعتماد الخطة'); };
-window.addInvoice = function(){ var total=+qs('#invTotal').value || 0; var paid=+qs('#invPaid').value || 0; var d=getData(currentDoc.id); d.patients[currentPatient].invoices.push({desc:qs('#invDesc').value,total:total,paid:paid}); saveData(currentDoc.id,d); openPatient(currentPatient); };
-window.saveNotes = function(){ var d=getData(currentDoc.id); d.patients[currentPatient].notes=qs('#notesTxt').value; saveData(currentDoc.id,d); alert('اتحفظت'); };
-window.closePatient = function(){ qs('#patientModal').innerHTML=''; renderApp(); };
-window.delPatient = function(i){ if(!confirm('تمسحي المريض؟')) return; var d=getData(currentDoc.id); d.patients.splice(i,1); saveData(currentDoc.id,d); renderApp(); };
-window.addAppoint = function(){ var d=getData(currentDoc.id); var patName=''; for(var i=0;i<d.patients.length;i++){ if(d.patients[i].phone == qs('#aPat').value){ patName=d.patients[i].name; } } d.appoints.push({name:patName,date:qs('#aDate').value,time:qs('#aTime').value,note:qs('#aNote').value}); saveData(currentDoc.id,d); renderApp(); };
-window.delAppoint = function(i){ var d=getData(currentDoc.id); d.appoints.splice(i,1); saveData(currentDoc.id,d); renderApp(); };
-window.addStock = function(){ var d=getData(currentDoc.id); d.stock.push({name:qs('#sname').value,qty:+qs('#sqty').value,price:+qs('#sprice').value,exp:qs('#sexp').value,min:+qs('#smin').value || 5}); saveData(currentDoc.id,d); renderApp(); };
-window.useStock = function(i){ var d=getData(currentDoc.id); d.stock[i].qty=Math.max(0,d.stock[i].qty-1); saveData(currentDoc.id,d); renderApp(); };
-window.delStock = function(i){ var d=getData(currentDoc.id); d.stock.splice(i,1); saveData(currentDoc.id,d); renderApp(); };
-window.addExpense = function(){ var d=getData(currentDoc.id); d.expenses.push({name:qs('#expName').value,amount:+qs('#expAmt').value}); saveData(currentDoc.id,d); renderApp(); };
-window.attend = function(t){ var d=getData(currentDoc.id); d.attendance.push({date:new Date().toLocaleString('ar-EG'),type:t}); saveData(currentDoc.id,d); alert('اتسجل ' + t); renderApp(); };
-window.addWait = function(){ var d=getData(currentDoc.id); d.wait.push(qs('#wname').value); saveData(currentDoc.id,d); renderApp(); };
-window.doneWait = function(i){ var d=getData(currentDoc.id); d.wait.splice(i,1); saveData(currentDoc.id,d); renderApp(); };
-window.saveSettings = function(){ var docs=getDoctors(); var idx=-1; for(var i=0;i<docs.length;i++){ if(docs[i].id == currentDoc.id){ idx=i; } } docs[idx].name=qs('#setClinic').value; docs[idx].doctor=qs('#setDoc').value; docs[idx].specialty=qs('#setSpec').value; docs[idx].secretary=qs('#setSec').value; docs[idx].passDoc=qs('#setPassDoc').value; docs[idx].passSec=qs('#setPassSec').value; saveDoctors(docs); currentDoc=docs[idx]; alert('اتحفظت'); renderApp(); };
-window.backup = function(){ var d=getData(currentDoc.id); var blob=new Blob([JSON.stringify(d)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup-' + currentDoc.id + '.json'; a.click(); };
-window.restore = function(e){ var f=e.target.files[0]; var r=new FileReader(); r.onload=function(){ saveData(currentDoc.id,JSON.parse(r.result)); alert('رجعنا النسخة'); renderApp(); }; r.readAsText(f); };
-var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferredPrompt = e; });
-window.installApp = function(){
-  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(){ deferredPrompt=null; }); }
-  else { alert('دوسي من متصفح كروم: ⋮ > Add to Home Screen / تثبيت التطبيق'); }
-};
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').then(function(){ console.log('SW OK'); }).catch(function(){});
-  });
-}
+render();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js')}
 </script>
 </body>
-</html>
+  </html>
