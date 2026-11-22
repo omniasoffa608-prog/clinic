@@ -152,5 +152,28 @@ db.collection("clinic_data").doc(DOCTOR_ID).get().then(function(doc){if(doc.exis
 db.collection("clinic_data").doc(DOCTOR_ID).onSnapshot(function(doc){if(!doc.exists)return;var d=doc.data();if(!d||isLoadingFromCloud)return;if(d.updatedAt&&d.patients){patients=d.patients;stock=d.stock||stock;manualExps=d.manualExps||manualExps;attendance=d.attendance||attendance;waitList=d.waitList||waitList;if(d.clinic){clinic=d.clinic;if(myDoctor.passDoc)clinic.passDoc=myDoctor.passDoc;if(myDoctor.passSec)clinic.passSec=myDoctor.passSec;}oldSave();render()}});
 }catch(e){console.log(e)}
 login();
+// إصلاح أزرار الإدارة
+function editDoctor(id){
+  var n = prompt('الاسم الجديد للدكتور:', doctorsRegistry[id].name);
+  if(n){ doctorsRegistry[id].name = n; saveRegistry(); renderAdmin(); alert('تم تغيير الاسم'); }
+}
+function editPassword(id){
+  var p = prompt('الرمز الجديد للدكتور:', doctorsRegistry[id].password);
+  if(p){ doctorsRegistry[id].password = p; saveRegistry(); renderAdmin(); alert('تم تغيير الرمز'); }
+}
+function toggleDoctor(id){
+  doctorsRegistry[id].active = !doctorsRegistry[id].active;
+  saveRegistry();
+  try{ if(typeof db!=='undefined' && db){ db.collection("doctors").doc(id).set({active:doctorsRegistry[id].active}, {merge:true}); } }catch(e){}
+  renderAdmin();
+  alert(doctorsRegistry[id].active ? 'تم فتح العيادة - شغال' : 'تم قفل العيادة');
+}
+function deleteDoctor(id){
+  if(confirm('متأكدة تحذفي '+doctorsRegistry[id].name+' ؟')){ delete doctorsRegistry[id]; saveRegistry(); renderAdmin(); }
+}
+function extendDoctor(id){
+  var d = prompt('كام يوم عايزة تمدي؟', '30');
+  if(d){ var exp = new Date(); exp.setDate(exp.getDate()+parseInt(d)); doctorsRegistry[id].expiresAt = exp.toISOString(); saveRegistry(); renderAdmin(); alert('تم التمديد'); }
+}
 </script>
 </body></html>
