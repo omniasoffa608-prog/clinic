@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omnia Hamdy System</title>
+<style>
+*{box-sizing:border-box} body{font-family:Arial;margin:0;background:#eef2f5;color:#111}
+header{background:#0f766e;color:#fff;padding:14px;text-align:center;font-size:20px;font-weight:bold}
+.card{background:#fff;margin:12px;padding:16px;border-radius:14px;box-shadow:0 2px 8px #0001}
+input,select,textarea{width:100%;padding:11px;margin:6px 0;border:1px solid #ddd;border-radius:10px;font-size:16px}
+button{width:100%;padding:12px;margin:6px 0;border:0;border-radius:10px;background:#0f766e;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+button.gray{background:#64748b} button.red{background:#dc2626} button.orange{background:#ea580c} button.light{background:#e2e8f0;color:#111}
+.row{display:flex;gap:8px} .row>*{flex:1}
+.teeth{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:10px 0}
+.tooth{padding:10px 0;text-align:center;border:1px solid #cbd5e1;border-radius:10px;cursor:pointer;background:#f8fafc}
+.tooth.sel{background:#0f766e;color:#fff}
+.doc{display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px;border-radius:12px;margin:8px 0}
+.badge{padding:4px 10px;border-radius:20px;color:#fff;font-size:13px} .on{background:#16a34a} .off{background:#dc2626}
+.hidden{display:none}
+.visit-head{display:flex;justify-content:space-between;align-items:center;background:#f1f5f9;padding:12px;border-radius:12px;cursor:pointer;margin:8px 0}
+.invoice{border:1px solid #e2e8f0;padding:12px;border-radius:12px;margin:8px 0}
+.small{font-size:13px;color:#475569}
+</style>
+</head>
+<body>
+<header>🦷 Omnia Hamdy System - لإدارة العيادات</header>
+
+<div id="home" class="card">
+<h2>اختر العيادة</h2>
+<div id="doctorList"></div>
+<button onclick="goAdmin()">دخول الإدارة - Omnia Hamdy ⚙️</button>
+</div>
+
+<div id="doctorPage" class="card hidden">
+<h2 id="dName"></h2>
+<div id="dStatus"></div>
+<div id="loginBox">
+<select id="loginRole"><option value="doctor">دكتور</option><option value="secretary">سكرتيرة</option></select>
+<input id="docPass" type="password" inputmode="numeric" placeholder="الرقم السري">
+<button onclick="doctorLogin()">دخول</button>
+<button class="gray" onclick="goHome()">رجوع</button>
+</div>
+
+<div id="clinicBox" class="hidden">
+<div class="row">
+<input id="patientName" placeholder="اسم المريض">
+<button onclick="addPatient()">+ إضافة مريض</button>
+</div>
+<div id="queue"></div>
+<button class="light" onclick="showReports()">📊 التقارير - حضور السكرتيرة والفواتير</button>
+<div id="reports" class="hidden"></div>
+<button class="red" onclick="goHome()">خروج</button>
+</div>
+
+<div id="secretaryBox" class="hidden">
+<h3>حضور السكرتيرة</h3>
+<p id="secName"></p>
+<label><input type="checkbox" id="isVacation" style="width:auto"> اليوم إجازة؟ لو إجازة مش هيتحسب غياب</label>
+<div class="row"><button onclick="setAttendance('حضور')">تسجيل الحضور</button><button class="orange" onclick="setAttendance('انصراف')">تسجيل الانصراف</button></div>
+<div id="attList"></div>
+<button class="gray" onclick="goHome()">خروج</button>
+</div>
+</div>
+
+<div id="patientPage" class="card hidden">
+<h2 id="pName"></h2>
+<button class="light" onclick="backToClinic()">⬅ رجوع لمرضى اليوم</button>
+<h3>🦷 الأسنان - دوسي على السن</h3>
+<div class="teeth" id="teethBox"></div>
+<p class="small">الأسنان المختارة: <span id="selTeeth"></span></p>
+
+<h3>📋 سجل الزيارات <span class="small">دوسي على السهم</span></h3>
+<div id="visitsBox"></div>
+<textarea id="visitText" placeholder="ما تم في الزيارة؟"></textarea>
+<button onclick="addVisit()">+ إضافة زيارة</button>
+
+<h3>🩺 خطة العلاج</h3>
+<textarea id="planText" placeholder="اكتبي خطة العلاج..."></textarea>
+<button onclick="savePlan()">حفظ خطة العلاج</button>
+
+<h3>🧾 الفواتير</h3>
+<input id="invTotal" type="number" inputmode="numeric" placeholder="المبلغ الأصلي - مثال 2000">
+<input id="invPaid" type="number" inputmode="numeric" placeholder="دفع كام؟ - مثال 500">
+<input id="invNote" placeholder="البيان - مثال تركيبة">
+<button onclick="addInvoice()">+ إضافة فاتورة</button>
+<div id="invBox"></div>
+
+<h3>📝 ملاحظات الدكتور</h3>
+<textarea id="noteText" placeholder="ملاحظات الدكتور..."></textarea>
+<button onclick="saveNote()">حفظ الملاحظات</button>
+</div>
+
+<div id="adminPage" class="card hidden">
+<h2>لوحة Omnia Hamdy</h2>
+<p class="small">انتي صاحبة السيستم، هنا بتضيفي الدكاترة العملاء وبتتحكمي فيهم</p>
+<div id="adminLogin">
+<input id="adminPass" type="password" inputmode="numeric" placeholder="باسورد الإدارة - 1234">
+<button onclick="adminLogin()">دخول</button>
+<button class="gray" onclick="goHome()">رجوع</button>
+</div>
+<div id="adminBox" class="hidden">
+<input id="newDocId" placeholder="اسم الرابط - مثال karem">
+<input id="newDocName" placeholder="اسم الدكتور - العميل">
+<input id="newDocPass" type="password" inputmode="numeric" placeholder="رقم سري الدكتور">
+<input id="newSecName" placeholder="اسم السكرتيرة">
+<input id="newSecPass" type="password" inputmode="numeric" placeholder="رقم سري السكرتيرة">
+<button onclick="addDoctor()">+ إضافة دكتور عميل</button>
+<div id="adminList"></div>
+<button class="gray" onclick="goHome()">خروج</button>
+</div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = { apiKey:"PUT_YOUR_API_KEY", authDomain:"PUT_YOUR_PROJECT.firebaseapp.com", projectId:"PUT_YOUR_PROJECT_ID" };
+let db=null; try{ if(firebaseConfig.apiKey!=="PUT_YOUR_API_KEY"){ firebase.initializeApp(firebaseConfig); db=firebase.firestore(); } }catch(e){}
+function getParam(n){ return new URLSearchParams(location.search).get(n); }
+function goHome(){ location.href=location.pathname; }
+function goAdmin(){ location.href=location.pathname+'?admin=1'; }
+// بركات هنا عميل عند Omnia Hamdy مش صاحب السيستم
+function getDoctors(){ try{ return JSON.parse(localStorage.getItem("omnia_doctors")||"null") || {
+barakat:{name:"د. كريم بركات",password:"12321",secName:"ندا ياسر",secPass:"2222",active:true,patients:[],attendance:[],specialty:"أخصائي طب وجراحة الفم والأسنان"}
+}; }catch(e){ return {}; } }
+function saveDoctors(d){ localStorage.setItem("omnia_doctors", JSON.stringify(d)); syncToCloud(); }
+async function syncToCloud(){ if(!db) return; try{ let d=getDoctors(); for(let id in d) await db.collection("omnia_doctors").doc(id).set(d[id]); }catch(e){} }
+async function loadFromCloud(){ if(!db) return; try{ let snap=await db.collection("omnia_doctors").get(); if(!snap.empty){ let d={}; snap.forEach(x=>d[x.id]=x.data()); localStorage.setItem("omnia_doctors", JSON.stringify(d)); } }catch(e){} }
+
+let currentId=null, currentPatientIdx=-1, selectedTeeth=[];
+async function showHome(){ await loadFromCloud(); let docs=getDoctors(); let h=""; for(let id in docs){ h+=`<div class="doc"><div><b>${docs[id].name}</b><br><span class="badge ${docs[id].active?'on':'off'}">${docs[id].active?'مفتوحة':'مقفولة'}</span></div><button style="width:auto" onclick="openDoctor('${id}')">دخول</button></div>`; } document.getElementById("doctorList").innerHTML=h||"لا يوجد دكاترة"; }
+function openDoctor(id){ location.href=location.pathname+'?d='+id; }
+async function initDoctor(){ currentId=getParam("d"); await loadFromCloud(); let docs=getDoctors(); let d=docs[currentId]; if(!d) return alert("الدكتور مش موجود"); document.getElementById("home").classList.add("hidden"); document.getElementById("doctorPage").classList.remove("hidden"); document.getElementById("dName").textContent=d.name; document.getElementById("dStatus").innerHTML=d.active?'<span class="badge on">مفتوحة</span>':'<span class="badge off">🔒 مقفولة من الإدارة</span>'; if(!d.active){ document.getElementById("loginBox").classList.add("hidden"); } if(db){ db.collection("omnia_doctors").doc(currentId).onSnapshot(snap=>{ if(!snap.exists) return; let dd=snap.data(); let docs2=getDoctors(); docs2[currentId]=dd; localStorage.setItem("omnia_doctors", JSON.stringify(docs2)); document.getElementById("dStatus").innerHTML=dd.active?'<span class="badge on">مفتوحة</span>':'<span class="badge off">🔒 مقفولة من الإدارة</span>'; if(!dd.active){ document.getElementById("clinicBox").classList.add("hidden"); document.getElementById("secretaryBox").classList.add("hidden"); document.getElementById("loginBox").classList.remove("hidden"); } renderQueue(); }); } }
+function doctorLogin(){ let docs=getDoctors(); let d=docs[currentId]; let role=document.getElementById("loginRole").value; let p=document.getElementById("docPass").value; if(!d.active) return alert("العيادة مقفولة من الإدارة"); if(role==="doctor" && p===d.password){ document.getElementById("loginBox").classList.add("hidden"); document.getElementById("clinicBox").classList.remove("hidden"); renderQueue(); } else if(role==="secretary" && p===d.secPass){ document.getElementById("loginBox").classList.add("hidden"); document.getElementById("secretaryBox").classList.remove("hidden"); document.getElementById("secName").textContent="السكرتيرة: "+(d.secName||""); renderAttendance(); } else alert("الرقم السري غلط"); }
+function renderQueue(){ let d=getDoctors()[currentId]; if(!d) return; let q=d.patients||[]; document.getElementById("queue").innerHTML=q.length?q.map((p,i)=>`<div class="doc"><b>${i+1} - ${p.name}</b><div><button style="width:auto" onclick="openPatient(${i})">فتح</button> <button style="width:auto" class="red" onclick="deletePatient(${i})">حذف</button></div></div>`).join(""):"<p>لا يوجد مرضى اليوم</p>"; }
+function addPatient(){ let n=document.getElementById("patientName").value.trim(); if(!n) return; let docs=getDoctors(); docs[currentId].patients.push({name:n,teeth:[],visits:[],plan:"",note:"",invoices:[]}); saveDoctors(docs); document.getElementById("patientName").value=""; renderQueue(); }
+function deletePatient(i){ if(!confirm("تحذفي المريض؟")) return; let docs=getDoctors(); docs[currentId].patients.splice(i,1); saveDoctors(docs); renderQueue(); }
+function openPatient(i){ currentPatientIdx=i; let p=getDoctors()[currentId].patients[i]; document.getElementById("doctorPage").classList.add("hidden"); document.getElementById("patientPage").classList.remove("hidden"); document.getElementById("pName").textContent=p.name; selectedTeeth=p.teeth||[]; renderTeeth(); renderVisits(); document.getElementById("planText").value=p.plan||""; document.getElementById("noteText").value=p.note||""; renderInvoices(); }
+function backToClinic(){ savePatientData(); document.getElementById("patientPage").classList.add("hidden"); document.getElementById("doctorPage").classList.remove("hidden"); renderQueue(); }
+function savePatientData(){ let docs=getDoctors(); let p=docs[currentId].patients[currentPatientIdx]; p.teeth=selectedTeeth; p.plan=document.getElementById("planText").value; p.note=document.getElementById("noteText").value; saveDoctors(docs); }
+function renderTeeth(){ let box=document.getElementById("teethBox"); box.innerHTML=""; for(let n=48;n>=41;n--) addTooth(box,n); for(let n=31;n<=38;n++) addTooth(box,n); document.getElementById("selTeeth").textContent=selectedTeeth.join(" ، ")||"لا يوجد"; }
+function addTooth(box,n){ let div=document.createElement("div"); div.className="tooth"+(selectedTeeth.includes(n)?" sel":""); div.textContent=n; div.onclick=()=>{ if(selectedTeeth.includes(n)) selectedTeeth=selectedTeeth.filter(x=>x!==n); else selectedTeeth.push(n); savePatientData(); renderTeeth(); }; box.appendChild(div); }
+  function renderVisits(){ let p=getDoctors()[currentId].patients[currentPatientIdx]; let box=document.getElementById("visitsBox"); if(!p.visits||!p.visits.length){ box.innerHTML="<p class='small'>لا يوجد زيارات</p>"; return; } box.innerHTML=p.visits.map((v,i)=>`<div><div class="visit-head" onclick="toggleVisit(${i})"><b>▼ الزيارة ${i+1}</b><span>${v.date||""}</span></div><div id="visit-${i}" class="hidden" style="padding:10px;background:#f8fafc;border-radius:10px">${v.text||""}<br><button class="red" onclick="deleteVisit(${i})">حذف الزيارة</button></div></div>`).join(""); }
+function toggleVisit(i){ document.getElementById("visit-"+i).classList.toggle("hidden"); }
+function addVisit(){ let t=document.getElementById("visitText").value.trim(); if(!t) return alert("اكتبي عملنا إيه في الزيارة"); let docs=getDoctors(); let p=docs[currentId].patients[currentPatientIdx]; p.visits=p.visits||[]; p.visits.push({text:t,date:new Date().toLocaleDateString("ar-EG")}); saveDoctors(docs); document.getElementById("visitText").value=""; renderVisits(); }
+function deleteVisit(i){ if(!confirm("تحذفي الزيارة؟")) return; let docs=getDoctors(); docs[currentId].patients[currentPatientIdx].visits.splice(i,1); saveDoctors(docs); renderVisits(); }
+function savePlan(){ savePatientData(); alert("تم حفظ خطة العلاج"); }
+function saveNote(){ savePatientData(); alert("تم حفظ الملاحظات"); }
+function renderInvoices(){ let p=getDoctors()[currentId].patients[currentPatientIdx]; let box=document.getElementById("invBox"); if(!p.invoices||!p.invoices.length){ box.innerHTML="<p class='small'>لا يوجد فواتير</p>"; return; } box.innerHTML=p.invoices.map((inv,i)=>{ let remain=(inv.total||0)-(inv.paid||0); return `<div class="invoice"><b>${inv.note||"فاتورة"}</b><br>المبلغ الأصلي: ${inv.total} ج<br>دفع: ${inv.paid} ج<br><b>الباقي: ${remain} ج</b><br><button class="red" onclick="deleteInvoice(${i})">حذف</button></div>`; }).join(""); }
+function addInvoice(){ let total=Number(document.getElementById("invTotal").value||0); let paid=Number(document.getElementById("invPaid").value||0); let note=document.getElementById("invNote").value||"فاتورة"; if(!total) return alert("اكتبي المبلغ الأصلي"); let docs=getDoctors(); let p=docs[currentId].patients[currentPatientIdx]; p.invoices=p.invoices||[]; p.invoices.push({total:total,paid:paid,note:note}); saveDoctors(docs); document.getElementById("invTotal").value=""; document.getElementById("invPaid").value=""; document.getElementById("invNote").value=""; renderInvoices(); }
+function deleteInvoice(i){ let docs=getDoctors(); docs[currentId].patients[currentPatientIdx].invoices.splice(i,1); saveDoctors(docs); renderInvoices(); }
+function setAttendance(type){ let docs=getDoctors(); let d=docs[currentId]; let vac=document.getElementById("isVacation").checked; let now=new Date().toLocaleString("ar-EG"); d.attendance=d.attendance||[]; d.attendance.push({type:type,time:now,vacation:vac,sec:d.secName}); saveDoctors(docs); alert(type+" اتسجل "+(vac?" - إجازة":"")); renderAttendance(); }
+function renderAttendance(){ let d=getDoctors()[currentId]; let list=d.attendance||[]; document.getElementById("attList").innerHTML=list.length?list.slice(-10).reverse().map(a=>`<div class="doc"><b>${a.type} ${a.vacation?"(إجازة)":""}</b><span>${a.time}</span></div>`).join(""):"<p>لا يوجد حضور</p>"; }
+function showReports(){ let d=getDoctors()[currentId]; let box=document.getElementById("reports"); box.classList.toggle("hidden"); let att=d.attendance||[]; let totalPaid=0,totalRemain=0; (d.patients||[]).forEach(p=>{(p.invoices||[]).forEach(inv=>{ totalPaid+=inv.paid||0; totalRemain+=(inv.total||0)-(inv.paid||0); });}); box.innerHTML=`<h3>تقارير ${d.name}</h3><b>حضور السكرتيرة ${d.secName||""}:</b><br>${att.length?att.slice(-10).reverse().map(a=>`${a.type} - ${a.time} ${a.vacation?"(إجازة - مش غياب)":""}`).join("<br>"):"لا يوجد"}<br><br><b>إجمالي المدفوع:</b> ${totalPaid} ج<br><b>إجمالي الباقي:</b> ${totalRemain} ج<br><b>عدد المرضى:</b> ${(d.patients||[]).length}`; }
+function initAdmin(){ document.getElementById("home").classList.add("hidden"); document.getElementById("adminPage").classList.remove("hidden"); }
+function adminLogin(){ if(document.getElementById("adminPass").value==="1234"){ document.getElementById("adminLogin").classList.add("hidden"); document.getElementById("adminBox").classList.remove("hidden"); renderAdmin(); if(db) db.collection("omnia_doctors").onSnapshot(()=>{ loadFromCloud().then(renderAdmin); }); } else alert("باسورد الإدارة غلط"); }
+function renderAdmin(){ let docs=getDoctors(); let h=""; for(let id in docs){ let d=docs[id]; h+=`<div class="doc" style="display:block"><b>${d.name}</b> - ${id} - <span class="badge ${d.active?'on':'off'}">${d.active?'مفتوحة':'مقفولة'}</span><br>رمز الدكتور: ${d.password} - سكرتيرة: ${d.secName} - رمزها: ${d.secPass}<br><br><button onclick="editName('${id}')">تعديل الاسم</button><button class="orange" onclick="editPass('${id}')">تعديل رمز الدكتور</button><button onclick="editSec('${id}')">تعديل السكرتيرة</button><button class="${d.active?'red':''}" onclick="toggleDoctor('${id}')">${d.active?'🔒 قفل':'🔓 فتح'}</button><button class="gray" onclick="copyLink('${id}')">نسخ لينك الدكتور</button><button class="red" onclick="deleteDoctor('${id}')">حذف</button></div>`; } document.getElementById("adminList").innerHTML=h; }
+function addDoctor(){ let id=document.getElementById("newDocId").value.trim(); let name=document.getElementById("newDocName").value.trim(); let pass=document.getElementById("newDocPass").value.trim(); let sec=document.getElementById("newSecName").value.trim()||"سكرتيرة"; let secPass=document.getElementById("newSecPass").value.trim()||"2222"; if(!id||!name||!pass) return alert("كملي بيانات الدكتور"); let docs=getDoctors(); docs[id]={name:name,password:pass,secName:sec,secPass:secPass,active:true,patients:[],attendance:[]}; saveDoctors(docs); alert("تم إضافة الدكتور"); renderAdmin(); }
+function editName(id){ let docs=getDoctors(); let n=prompt("الاسم الجديد",docs[id].name); if(!n) return; docs[id].name=n; saveDoctors(docs); renderAdmin(); }
+function editPass(id){ let docs=getDoctors(); let p=prompt("رمز الدكتور الجديد",docs[id].password); if(!p) return; docs[id].password=p; saveDoctors(docs); renderAdmin(); }
+function editSec(id){ let docs=getDoctors(); let n=prompt("اسم السكرتيرة",docs[id].secName); if(n) docs[id].secName=n; let p=prompt("رمز السكرتيرة",docs[id].secPass); if(p) docs[id].secPass=p; saveDoctors(docs); renderAdmin(); }
+function toggleDoctor(id){ let docs=getDoctors(); docs[id].active=!docs[id].active; saveDoctors(docs); renderAdmin(); }
+function deleteDoctor(id){ if(!confirm("متأكدة تحذفي؟")) return; let docs=getDoctors(); delete docs[id]; saveDoctors(docs); renderAdmin(); }
+function copyLink(id){ let link=location.origin+location.pathname+'?d='+id; navigator.clipboard.writeText(link); alert("اتنسخ: "+link); }
+(async function(){ if(getParam("admin")==="1") initAdmin(); else if(getParam("d")) initDoctor(); else showHome(); })();
+</script>
+</body>
+</html>
