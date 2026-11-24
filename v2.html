@@ -365,5 +365,74 @@ fetch('https://buba-clinic-app-default-rtdb.firebaseio.com/omnia_v2.json').then(
 
 })();
 </script>
+  <style>
+#omniaTop{
+  position:fixed!important; top:60px!important; right:8px!important; left:8px!important;
+  z-index:9999!important; display:flex!important; gap:6px!important;
+}
+#omniaTop button{
+  flex:1!important; background:#0B3D91!important; color:#fff!important;
+  border:none!important; padding:13px!important; border-radius:20px!important;
+  font-size:15px!important; font-weight:bold!important;
+  box-shadow:0 4px 10px rgba(0,0,0,.3)!important;
+}
+#omniaInstall{
+  position:fixed!important; bottom:15px!important; right:15px!important; left:15px!important;
+  z-index:9999!important; background:#25D366!important; color:#fff!important;
+  border:none!important; padding:15px!important; border-radius:25px!important;
+  font-size:16px!important; font-weight:bold!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.3)!important;
+}
+.sidebar.open, nav.open, .menu-open .sidebar{
+  display:block!important; transform:none!important; left:0!important; right:0!important;
+}
+</style>
+
+<div id="omniaTop">
+  <button onclick="toggleOmniaMenu()">☰ الرئيسية - افتحي القايمة</button>
+</div>
+
+<button id="omniaInstall">⬇️ نزّل التطبيق على الشاشة</button>
+
+<script>
+function toggleOmniaMenu(){
+  let side = document.querySelector('.sidebar') || document.querySelector('nav') || document.querySelector('aside');
+  if(side){
+    side.classList.toggle('open');
+    side.style.display = side.classList.contains('open') ? 'block' : 'none';
+    side.style.position = 'fixed';
+    side.style.top = '110px';
+    side.style.right = '8px';
+    side.style.left = '8px';
+    side.style.zIndex = '9998';
+    side.style.background = '#fff';
+    side.style.borderRadius = '14px';
+    side.style.boxShadow = '0 4px 15px rgba(0,0,0,.25)';
+    side.style.padding = '10px';
+  } else {
+    alert('القايمة هتظهر هنا - دوسي رجوع وافتحي الصفحة من الأول');
+    window.scrollTo(0,0);
+  }
+  // لو دوسنا على أي حاجة في القايمة، اقفل القايمة
+  document.querySelectorAll('.sidebar a, .sidebar button, nav a').forEach(el=>{
+    el.onclick = ()=>{ setTimeout(()=>{ if(side) side.style.display='none'; }, 200); };
+  });
+}
+
+// زرار التنزيل على الشاشة - PWA
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
+document.getElementById('omniaInstall').onclick = async ()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    let choice = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if(choice.outcome==='accepted') alert('اتثبّت ✅ هتلاقيه على الشاشة');
+  } else {
+    // للآيفون والأندرويد اللي مفيهوش تنزيل تلقائي
+    alert('عشان ينزل على الشاشة:\n\nلو آيفون: دوسي على زرار المشاركة تحت ⬆️ > إضافة إلى الشاشة الرئيسية > إضافة\n\nلو أندرويد: دوسي على ⋮ فوق > إضافة إلى الشاشة الرئيسية > تثبيت');
+  }
+};
+</script>
 </body>
 </html>
