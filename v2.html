@@ -1,438 +1,132 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Omnia Clinic V2</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b5cad">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نظام العيادة</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
-*{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial}
-body{margin:0;background:#f2f6fa;color:#122}
-:root{--blue:#0b5cad;--light:#eaf3ff;--gold:#c9a227;--black:#111}
-.top{position:fixed;top:0;right:0;left:0;height:56px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;box-shadow:0 2px 10px #0001;z-index:10}
-.logo{display:flex;align-items:center;gap:8px;font-weight:900}
-.logo span{width:34px;height:34px;background:#111;color:var(--gold);display:grid;place-items:center;border-radius:50%;font-size:20px;border:2px solid var(--gold)}
-.btn{background:var(--blue);color:#fff;border:0;padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:700}
-.btn2{background:#fff;color:var(--blue);border:1px solid var(--blue);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700}
-input,select,textarea{width:100%;padding:10px;border:1px solid #cdd9e5;border-radius:10px;margin:6px 0;background:#fff}
-.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px #0001;margin-bottom:12px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:700px){.row{grid-template-columns:1fr}}
-.sidebar{position:fixed;top:56px;right:0;bottom:0;width:230px;background:#0b5cad;color:#fff;padding:14px;overflow:auto}
-.sidebar button{display:block;width:100%;text-align:right;background:transparent;color:#fff;border:0;padding:12px;border-radius:10px;cursor:pointer;font-size:15px}
-.sidebar button.active,.sidebar button:hover{background:#ffffff22}
-.main{margin:70px 14px 80px 14px}
-@media(min-width:800px){.main{margin-right:244px}}
-.hide{display:none!important}
-.teeth{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.tooth{width:42px;height:42px;border:2px solid var(--blue);border-radius:50%;display:grid;place-items:center;cursor:pointer;background:#fff;font-weight:800}
-.tooth.sel{background:var(--blue);color:#fff}
-.tooth.done{background:#ff8a00;color:#fff;border-color:#ff8a00}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
-td,th{padding:9px;border-bottom:1px solid #eee;text-align:right;font-size:14px}
-.login{max-width:420px;margin:90px auto;background:#fff;padding:22px;border-radius:20px;box-shadow:0 10px 30px #0002;text-align:center}
-.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800}
-.green{background:#d6f5d6}.red{background:#ffd6d6}.yellow{background:#fff2b0}
-.footer{text-align:center;color:#777;font-size:12px;padding:14px}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#0f172a;color:#fff}
+.top{display:flex;gap:8px;align-items:center;padding:10px;background:#1e293b;position:sticky;top:0;z-index:10}
+.top button{background:#334155;color:#fff;border:0;padding:8px 12px;border-radius:10px;cursor:pointer}
+.wrap{display:flex}.side{width:230px;background:#1e293b;min-height:100vh;padding:12px;transition:.3s}
+.side.hide{width:0;padding:0;overflow:hidden}.side button{width:100%;text-align:right;background:#0f172a;color:#fff;border:1px solid #334155;padding:10px;border-radius:10px;margin:5px 0;cursor:pointer}
+.main{flex:1;padding:14px}.card{background:#1e293b;padding:14px;border-radius:14px;margin-bottom:12px}
+input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;margin:5px 0}
+.btn{background:#22c55e!important;color:#000!important;font-weight:800}.red{background:#ef4444!important}.blue{background:#3b82f6!important}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tooth{aspect-ratio:1;background:#fff;color:#000;border-radius:50% 50% 45% 45%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:3px solid #cbd5e1;font-weight:800}
+.tooth small{font-size:11px}.t-fill{background:#60a5fa}.t-ext{background:#f87171}.t-imp{background:#4ade80}.t-ortho{background:#c084fc}.t-clean{background:#facc15}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+.hidden{display:none}.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.kpi div{background:#0f172a;padding:12px;border-radius:12px;text-align:center}.kpi b{font-size:22px;display:block}
+@media(max-width:700px){.side{position:fixed;z-index:20;height:100vh}}
 </style>
 </head>
 <body>
 <div class="top">
-<div class="logo"><span>O</span><div>Omnia Clinic <small style="display:block;font-size:11px;color:#666">عيادة د. <span id="clinicNameTop">---</span></small></div></div>
-<div style="display:flex;gap:6px;align-items:center">
-<span id="trialBadge" class="badge yellow"></span>
-<button class="btn2" onclick="toggleLang()">عربي | English</button>
-<button class="btn2" onclick="backup()">نسخة احتياطية</button>
+<button onclick="toggleSide()">☰ <span data-t="menu">القائمة</span></button><b>نظام العيادة</b><span style="flex:1"></span>
+<button onclick="setLang('ar')">العربية</button><button onclick="setLang('en')">English</button>
+<button onclick="logout()">🚪 <span data-t="logout">تسجيل الخروج</span></button>
 </div>
+<div class="wrap">
+<div class="side" id="side">
+<button onclick="show('patients')">🦷 <span data-t="patients">المرضى</span></button>
+<button onclick="show('inventory')">📦 <span data-t="inventory">المخزون</span></button>
+<button onclick="show('expenses')">💸 <span data-t="expenses">المصروفات</span></button>
+<button onclick="show('attendance')" id="attBtn">🕒 <span data-t="attendance">الحضور والغياب</span></button>
+<button onclick="show('reports')" id="repBtn">📊 <span data-t="reports">التقارير</span></button>
+<button onclick="show('settings')" id="settingsBtn">⚙️ <span data-t="settings">الإعدادات</span></button>
 </div>
-
-<!-- LOGIN -->
-<div id="loginPage" class="login">
-<div class="logo" style="justify-content:center"><span>O</span><b style="font-size:24px">Omnia Clinic</b></div>
-<h2 id="welcomeDr">أهلاً دكتور</h2>
-<p id="welcomeClinic" style="color:#666">عيادة</p>
-<p style="color:#888;font-size:13px">ادخل كلمة المرور للمتابعة</p>
-<input type="password" id="passInput" placeholder="••••••••">
-<button class="btn" style="width:100%" onclick="doLogin()">دخول</button>
-<p style="font-size:12px;color:#888">لو انت سكرتيرة ادخلي باسورد السكرتيرة</p>
-<p id="loginMsg" style="color:red"></p>
-</div>
-
-<!-- APP -->
-<div id="app" class="hide">
-<div class="sidebar" id="sidebar"></div>
 <div class="main">
-<div id="page-patients"></div>
-<div id="page-appointments" class="hide"></div>
-<div id="page-inventory" class="hide"></div>
-<div id="page-reports" class="hide"></div>
-<div id="page-settings" class="hide"></div>
-<div id="page-admin" class="hide"></div>
+<div class="card" id="loginCard">
+<h2 data-t="loginTitle">تسجيل الدخول إلى العيادة</h2>
+<p data-t="loginSub">كلمة المرور غير مكتوبة في الكود، ويتم إدخالها من قبل الطبيب فقط</p>
+<select id="loginRole"><option value="doctor">طبيب / Doctor</option><option value="secretary">سكرتيرة / Secretary</option></select>
+<input id="loginPass" type="password" placeholder="•••• كلمة المرور">
+<button class="btn" onclick="doLogin()" data-t="enter">دخول</button>
+<p><small data-t="firstTime">أول مرة؟ يقوم الطبيب بإنشاء كلمة مرور:</small></p>
+<input id="newPass" type="password" placeholder="كلمة مرور جديدة">
+<button onclick="setFirstPass()" data-t="savePass">حفظ كلمة مرور الطبيب</button>
+<div id="subMsg" style="color:#f87171;margin-top:8px"></div>
 </div>
-<div class="footer">نظام Omnia Clinic - تصميم م. أمنية | Omnia Clinic System - Eng. Omnia</div>
+<div id="app" class="hidden">
+<div id="patients" class="card">
+<h2 data-t="patients">المرضى</h2>
+<div class="row"><input id="pName" placeholder="اسم المريض"><input id="pPhone" placeholder="رقم الهاتف"><input id="pAge" type="number" placeholder="العمر"><input id="pTotal" type="number" placeholder="المبلغ الإجمالي"></div>
+<textarea id="pNotes" placeholder="ملاحظات"></textarea>
+<button class="btn" onclick="addPatient()" data-t="addPatient">إضافة مريض</button>
+<div id="patientList"></div><div id="patientFile"></div>
 </div>
-<script>
-let DB=JSON.parse(localStorage.getItem('omnia_v2')||'{}');
-if(!DB.patients) DB={patients:[],appointments:[],inventory:[],manualExp:[],attendance:[],payments:[],doctors:{},settings:{doctorName:'دكتور تجريبي',clinicName:'عيادة تجريبية',secretaryName:'سكرتيرة',doctorPass:'1234',secretaryPass:'1111',startDate:new Date().toISOString().slice(0,10),lang:'ar'}};
-function save(){localStorage.setItem('omnia_v2',JSON.stringify(DB)); syncCloud();}
-function syncCloud(){ try{ fetch('https://buba-clinic-app-default-rtdb.firebaseio.com/omnia_v2.json',{method:'PUT',body:JSON.stringify(DB)}).catch(()=>{}) }catch(e){} }
-function backup(){let b=new Blob([JSON.stringify(DB)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='omnia-backup.json';a.click();}
-function toggleLang(){DB.settings.lang=DB.settings.lang==='ar'?'en':'ar';save();applyLang();}
-function applyLang(){document.documentElement.dir=DB.settings.lang==='ar'?'rtl':'ltr';document.documentElement.lang=DB.settings.lang;}
-let CURRENT_ROLE='doctor';
-function doLogin(){let p=document.getElementById('passInput').value;let s=DB.settings;if(p===s.doctorPass){CURRENT_ROLE='doctor';openApp();}else if(p===s.secretaryPass){CURRENT_ROLE='secretary';openApp();}else{document.getElementById('loginMsg').textContent='كلمة المرور غير صحيحة';}}
-function openApp(){document.getElementById('loginPage').classList.add('hide');document.getElementById('app').classList.remove('hide');document.getElementById('clinicNameTop').textContent=DB.settings.clinicName;document.getElementById('welcomeDr').textContent='أهلاً دكتور '+DB.settings.doctorName;buildSidebar();showPage('patients');updateTrial();}
-function buildSidebar(){let items=[];if(CURRENT_ROLE==='doctor'){items=[['patients','المرضى'],['appointments','المواعيد'],['inventory','المخزون'],['reports','التقارير'],['settings','الإعدادات'],['admin','الإدارة']];}else{items=[['patients','المرضى'],['appointments','المواعيد'],['inventory','المخزون']];}document.getElementById('sidebar').innerHTML=items.map(i=>`<button onclick="showPage('${i[0]}')">${i[1]}</button>`).join('')+`<button onclick="location.reload()">تسجيل الخروج</button>`+`<div style="margin-top:14px;background:#ffffff22;padding:10px;border-radius:12px"><b>حضور السكرتيرة</b><select id="attSel"><option>حضور</option><option>غياب</option><option>إجازة</option></select><button class="btn" style="width:100%;margin-top:6px" onclick="markAtt()">تسجيل اليوم ${new Date().toLocaleDateString('ar-EG')}</button></div>`;}
-function markAtt(){let v=document.getElementById('attSel').value;let d=new Date().toISOString().slice(0,10);DB.attendance=DB.attendance.filter(a=>a.date!==d);DB.attendance.push({date:d,status:v});save();alert('تم تسجيل '+v);}
-function showPage(p){['patients','appointments','inventory','reports','settings','admin'].forEach(x=>document.getElementById('page-'+x).classList.toggle('hide',x!==p));if(p==='patients')renderPatients();if(p==='appointments')renderAppts();if(p==='inventory')renderInv();if(p==='reports')renderReports();if(p==='settings')renderSettings();if(p==='admin')renderAdmin();}
-function updateTrial(){let start=new Date(DB.settings.startDate);let diff=Math.floor((new Date()-start)/86400000);let left=30-diff;let el=document.getElementById('trialBadge');if(left<=0){el.textContent='انتهت الفترة المجانية';el.className='badge red';}else if(left<=7){el.textContent='فاضل '+left+' يوم والسيستم يقفل';el.className='badge red';}else{el.textContent='فاضل '+left+' يوم - اليوم '+(diff+1);el.className='badge yellow';}if(left<=0 && CURRENT_ROLE!=='admin'){document.body.innerHTML='<div style="text-align:center;padding:60px"><h2>انتهت الفترة المجانية</h2><p>تواصل مع الإدارة للتجديد</p><p>Omnia Clinic</p></div>';}}
-applyLang();
-</script>
-<script>
-// ===== الجزء 2 : المرضى + خريطة الأسنان + خطة العلاج + الفلوس =====
-let CUR_PATIENT=null, SEL_TOOTH=null;
-function renderPatients(){
-let el=document.getElementById('page-patients');
-let list=DB.patients.map((p,i)=>`
-<tr><td><b>${p.name}</b><br><small>${p.phone} | ${p.age} سنة | ${p.type}</small></td>
-<td>${p.treatments?p.treatments.length:0} علاج<br>المتبقي: ${calcLeft(p)} ج</td>
-<td><button class="btn2" onclick="openPatient(${i})">فتح الملف</button> <button class="btn2" onclick="delPatient(${i})">حذف</button></td></tr>`).join('');
-el.innerHTML=`
-<div class="card"><h3>إضافة مريض جديد</h3>
-<div class="row"><input id="pName" placeholder="اسم المريض"><input id="pPhone" placeholder="التليفون"></div>
-<div class="row"><input id="pAge" type="number" placeholder="العمر"><select id="pType"><option>بالغ</option><option>طفل</option></select></div>
-<input id="pAddr" placeholder="العنوان"><textarea id="pNote" placeholder="ملاحظات طبية - سكر / ضغط / حساسية"></textarea>
-<button class="btn" onclick="addPatient()">إضافة المريض</button></div>
-<div class="card"><h3>قائمة المرضى (${DB.patients.length})</h3>
-<input placeholder="ابحث بالاسم أو التليفون" oninput="searchPat(this.value)" id="searchBox">
-<table id="patTable">${list||'<tr><td>لسه مفيش مرضى</td></tr>'}</table></div>
-<div id="patientFile"></div>`;
-}
-function searchPat(v){let rows=document.querySelectorAll('#patTable tr');rows.forEach(r=>{r.style.display=r.textContent.includes(v)?'':'none';});}
-function addPatient(){
-let n=document.getElementById('pName').value.trim();if(!n)return alert('اكتبي اسم المريض');
-DB.patients.push({name:n,phone:document.getElementById('pPhone').value,age:document.getElementById('pAge').value||'',type:document.getElementById('pType').value,address:document.getElementById('pAddr').value,note:document.getElementById('pNote').value,treatments:[],visits:1,created:new Date().toISOString().slice(0,10)});
-save();renderPatients();alert('تم إضافة '+n);
-}
-function delPatient(i){if(confirm('متأكدة تحذفي؟')){DB.patients.splice(i,1);save();renderPatients();}}
-function calcLeft(p){let total=(p.treatments||[]).reduce((s,t)=>s+Number(t.price||0),0);let paid=(p.treatments||[]).reduce((s,t)=>s+Number(t.paid||0),0);return total-paid;}
-function openPatient(i){
-CUR_PATIENT=i;let p=DB.patients[i];
-let isChild=p.type==='طفل'||Number(p.age)<12;
-let teeth=isChild?[55,54,53,52,51,61,62,63,64,65,85,84,83,82,81,71,72,73,74,75]:[18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28,48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
-let teethHtml=teeth.map(t=>`<div class="tooth ${p.treatments.some(x=>x.tooth==t)?'done':''} ${SEL_TOOTH==t?'sel':''}" onclick="SEL_TOOTH=${t};openPatient(${i})">${t}</div>`).join('');
-let trHtml=(p.treatments||[]).map((t,ti)=>`<tr><td>سنة ${t.tooth} - ${t.work}</td><td>${t.price} ج</td><td>${t.paid} ج</td><td>${t.price-t.paid} ج</td><td><button class="btn2" onclick="payMore(${i},${ti})">دفعة +</button></td></tr>`).join('');
-document.getElementById('patientFile').innerHTML=`
-<div class="card" style="border:2px solid var(--gold)">
-<h3>ملف المريض: ${p.name} - زيارة رقم ${p.visits} - ${p.created}</h3>
-<p>تليفون: ${p.phone} | عمر: ${p.age} | ${p.type} | ملاحظات: ${p.note||'-'}</p>
-<h4>خريطة الأسنان - ${isChild?'أطفال (20 سنة)':'كبار (32 سنة)'} - اضغطي على السنة</h4>
-<div class="teeth">${teethHtml}</div>
-<p>السنة المختارة: <b>${SEL_TOOTH||'اختاري سنة'}</b></p>
-<div class="row"><select id="workSel"><option>حشو</option><option>خلع</option><option>علاج عصب</option><option>تقويم</option><option>زراعة</option><option>تنضيف</option><option>تركيبة</option></select>
-<input id="workPrice" type="number" placeholder="السعر بالجنيه"></div>
-<div class="row"><input id="workPaid" type="number" placeholder="المدفوع الآن"><button class="btn" onclick="addTreat(${i})">إضافة للخطة</button></div>
-<table><tr><th>العلاج</th><th>السعر</th><th>المدفوع</th><th>المتبقي</th><th></th></tr>${trHtml||'<tr><td>لسه مفيش خطة علاج</td></tr>'}</table>
-<h3 style="color:var(--blue)">إجمالي: ${(p.treatments||[]).reduce((s,t)=>s+Number(t.price||0),0)} ج | المدفوع: ${(p.treatments||[]).reduce((s,t)=>s+Number(t.paid||0),0)} ج | المتبقي: ${calcLeft(p)} ج</h3>
-<button class="btn2" onclick="DB.patients[${i}].visits++;save();openPatient(${i})">زيارة جديدة +</button>
-</div>`;
-window.scrollTo(0,document.getElementById('patientFile').offsetTop-70);
-}
-function addTreat(i){if(!SEL_TOOTH)return alert('اختاري السنة الأول');let p=DB.patients[i];p.treatments.push({tooth:SEL_TOOTH,work:document.getElementById('workSel').value,price:Number(document.getElementById('workPrice').value||0),paid:Number(document.getElementById('workPaid').value||0),date:new Date().toISOString().slice(0,10)});save();openPatient(i);}
-function payMore(i,ti){let v=prompt('دفع كام؟');if(!v)return;DB.patients[i].treatments[ti].paid+=Number(v);save();openPatient(i);}
-</script>
-<script>
-// ===== الجزء 3 : المواعيد + المخزون + المصاريف + التقارير =====
-function renderAppts(){
-let el=document.getElementById('page-appointments');
-let list=DB.appointments.map((a,i)=>`<tr><td><b>${a.name}</b><br>${a.phone}</td><td>${a.date} - ${a.time}</td><td>${a.note||''}</td><td><button class="btn2" onclick="delAppt(${i})">حذف</button></td></tr>`).join('');
-el.innerHTML=`
-<div class="card"><h3>إضافة موعد جديد</h3>
-<div class="row"><input id="aName" placeholder="اسم المريض"><input id="aPhone" placeholder="التليفون"></div>
-<div class="row"><input id="aDate" type="date"><input id="aTime" type="time"></div>
-<input id="aNote" placeholder="ملاحظة - كشف / متابعة / تركيب">
-<button class="btn" onclick="addAppt()">إضافة موعد</button></div>
-<div class="card"><h3>مواعيد اليوم والجاية (${DB.appointments.length})</h3>
-<table>${list||'<tr><td>مفيش مواعيد</td></tr>'}</table></div>
-<div class="card"><h3>حضور السكرتيرة</h3>
-<table>${DB.attendance.map(a=>`<tr><td>${a.date}</td><td>${a.status}</td></tr>`).join('')||'<tr><td>لسه مفيش حضور متسجل</td></tr>'}</table></div>`;
-}
-function addAppt(){let n=document.getElementById('aName').value.trim();if(!n)return alert('اكتبي اسم المريض');DB.appointments.push({name:n,phone:document.getElementById('aPhone').value,date:document.getElementById('aDate').value,time:document.getElementById('aTime').value,note:document.getElementById('aNote').value});save();renderAppts();}
-function delAppt(i){DB.appointments.splice(i,1);save();renderAppts();}
-
-function renderInv(){
-let el=document.getElementById('page-inventory');
-let invHtml=DB.inventory.map((it,i)=>{let left=it.qty-it.used;let cost=it.used*it.price;return `<tr><td><b>${it.name}</b><br>انتهاء: ${it.exp||'-'}</td><td>${it.qty} - استهلك ${it.used} = فاضل ${left}</td><td>${it.price} ج / القطعة</td><td>المصاريف: ${cost} ج</td><td><button class="btn2" onclick="useInv(${i})">استهلك +</button> <button class="btn2" onclick="delInv(${i})">حذف</button></td></tr>`}).join('');
-let expHtml=DB.manualExp.map((e,i)=>`<tr><td>${e.name}</td><td>${e.amount} ج</td><td>${e.date}</td><td><button class="btn2" onclick="delExp(${i})">حذف</button></td></tr>`).join('');
-let totalInv=DB.inventory.reduce((s,it)=>s+(it.used*it.price),0);
-let totalExp=DB.manualExp.reduce((s,e)=>s+Number(e.amount||0),0);
-el.innerHTML=`
-<div class="card"><h3>إضافة صنف للمخزون</h3>
-<div class="row"><input id="invName" placeholder="اسم الصنف - جوانتي / بنج"><input id="invQty" type="number" placeholder="الكمية"></div>
-<div class="row"><input id="invPrice" type="number" placeholder="سعر القطعة بالجنيه"><input id="invExp" type="date"></div>
-<button class="btn" onclick="addInv()">إضافة للمخزون</button></div>
-<div class="card"><h3>المخزون</h3><table>${invHtml||'<tr><td>المخزون فاضي</td></tr>'}</table><p>إجمالي مصاريف المخزون المستهلك: <b>${totalInv} ج</b></p></div>
-<div class="card"><h3>مصاريف يدوية - إيجار / كهربا / مياه / غاز / نضافة</h3>
-<div class="row"><select id="expName"><option>إيجار</option><option>كهربا</option><option>مياه</option><option>غاز</option><option>نضافة</option><option>أخرى</option></select><input id="expAmt" type="number" placeholder="المبلغ بالجنيه"></div>
-<button class="btn" onclick="addExp()">إضافة مصروف</button>
-<table>${expHtml||'<tr><td>مفيش مصاريف يدوية</td></tr>'}</table><p>إجمالي يدوي: <b>${totalExp} ج</b></p></div>`;
-}
-function addInv(){let n=document.getElementById('invName').value.trim();if(!n)return alert('اكتبي اسم الصنف');DB.inventory.push({name:n,qty:Number(document.getElementById('invQty').value||0),used:0,price:Number(document.getElementById('invPrice').value||0),exp:document.getElementById('invExp').value});save();renderInv();}
-function useInv(i){let v=prompt('استهلك كام قطعة؟','1');if(!v)return;DB.inventory[i].used+=Number(v);save();renderInv();}
-function delInv(i){DB.inventory.splice(i,1);save();renderInv();}
-function addExp(){DB.manualExp.push({name:document.getElementById('expName').value,amount:Number(document.getElementById('expAmt').value||0),date:new Date().toISOString().slice(0,10)});save();renderInv();}
-function delExp(i){DB.manualExp.splice(i,1);save();renderInv();}
-
-function renderReports(){
-if(CURRENT_ROLE!=='doctor'){document.getElementById('page-reports').innerHTML='<div class="card">التقارير للدكتور بس</div>';return;}
-let income=DB.patients.reduce((s,p)=>(p.treatments||[]).reduce((a,t)=>a+Number(t.paid||0),s),0);
-let totalInv=DB.inventory.reduce((s,it)=>s+(it.used*it.price),0);
-let totalExp=DB.manualExp.reduce((s,e)=>s+Number(e.amount||0),0);
-let net=income-(totalInv+totalExp);
-let today=new Date().toISOString().slice(0,10);
-let month=today.slice(0,7);
-let thisMonthPat=DB.patients.filter(p=>p.created&&p.created.startsWith(month)).length;
-document.getElementById('page-reports').innerHTML=`
-<div class="card"><h3>تقارير ${DB.settings.clinicName}</h3>
-<div class="row"><div class="card" style="background:#eaf3ff"><b>إجمالي الدخل</b><h2>${income} ج</h2></div>
-<div class="card" style="background:#ffe9e9"><b>إجمالي المصاريف</b><h2>${totalInv+totalExp} ج</h2><small>مخزون ${totalInv} + يدوي ${totalExp}</small></div></div>
-<div class="card" style="background:#d6f5d6"><b>صافي الدخل</b><h2>${net} ج</h2><p>المعادلة: دخل ${income} - مصاريف ${totalInv+totalExp} = ${net}</p></div>
-<div class="row"><div class="card">مرضى جدد هذا الشهر: <b>${thisMonthPat}</b></div><div class="card">إجمالي المرضى: <b>${DB.patients.length}</b></div></div>
-<div class="card"><h4>حضور السكرتيرة ${DB.settings.secretaryName}</h4><table>${DB.attendance.map(a=>`<tr><td>${a.date}</td><td>${a.status}</td></tr>`).join('')||'<tr><td>مفيش حضور</td></tr>'}</table></div>
-<button class="btn" onclick="window.print()">طباعة التقرير</button></div>`;
-}
-</script>
-<script>
-// ===== الجزء 4 : الإعدادات + الإدارة + الشهر المجاني + الحفظ + الأمان =====
-function renderSettings(){
-let s=DB.settings;
-document.getElementById('page-settings').innerHTML=`
-<div class="card"><h3>إعدادات العيادة - للدكتور بس</h3>
-<label>اسم الدكتور</label><input id="sDoc" value="${s.doctorName}">
-<label>اسم العيادة</label><input id="sClinic" value="${s.clinicName}">
-<label>اسم السكرتيرة</label><input id="sSec" value="${s.secretaryName}">
-<label>باسورد الدكتور</label><input id="sDocPass" value="${s.doctorPass}">
-<label>باسورد السكرتيرة</label><input id="sSecPass" value="${s.secretaryPass}">
-<label>تاريخ بداية الاشتراك</label><input id="sStart" type="date" value="${s.startDate}">
-<button class="btn" onclick="saveSettings()">حفظ الإعدادات</button></div>
-<div class="card"><h3>نسخة احتياطية</h3>
-<button class="btn2" onclick="backup()">تحميل نسخة احتياطية</button>
-<input type="file" id="restoreFile" accept=".json"><button class="btn2" onclick="restore()">استرجاع النسخة</button>
-<p style="font-size:12px;color:#888">النسخة بتحفظ كل المرضى والفلوس والمخزون والحضور</p></div>
-<div class="card"><h3>حالة الاشتراك</h3><p id="trialInfo"></p></div>`;
-let start=new Date(s.startDate);let diff=Math.floor((new Date()-start)/86400000);let left=30-diff;
-document.getElementById('trialInfo').innerHTML=`اليوم الـ ${diff+1} من 30 - فاضل <b>${left}</b> يوم والسيستم يقفل. لو خلصت، كلم الإدارة للتجديد.`;
-}
-function saveSettings(){DB.settings.doctorName=document.getElementById('sDoc').value;DB.settings.clinicName=document.getElementById('sClinic').value;DB.settings.secretaryName=document.getElementById('sSec').value;DB.settings.doctorPass=document.getElementById('sDocPass').value;DB.settings.secretaryPass=document.getElementById('sSecPass').value;DB.settings.startDate=document.getElementById('sStart').value;save();alert('تم الحفظ');location.reload();}
-function restore(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('اختاري ملف النسخة الأول');let r=new FileReader();r.onload=e=>{DB=JSON.parse(e.target.result);save();alert('تم الاسترجاع');location.reload();};r.readAsText(f);}
-
-function renderAdmin(){
-// الإدارة بتتفتح بس بـ v2.html?admin=1
-let isAdmin=new URLSearchParams(location.search).get('admin')==='1';
-if(!isAdmin){document.getElementById('page-admin').innerHTML='<div class="card"><h3>الإدارة</h3><p>الصفحة دي للإدارة بس، بتتفتح من لينك الإدارة.</p></div>';return;}
-let docs=DB.doctors||{};
-let html=Object.keys(docs).map(k=>{let d=docs[k];let diff=Math.floor((new Date()-new Date(d.startDate))/86400000);let left=30-diff;return `<tr><td><b>${d.doctorName}</b><br>${d.clinicName}<br><small>${k}</small></td><td>اليوم ${diff+1} - فاضل ${left} يوم</td><td>${d.locked?'<span class="badge red">مقفول</span>':'<span class="badge green">شغال</span>'}</td><td><button class="btn2" onclick="toggleLock('${k}')">${d.locked?'فتح':'قفل'}</button> <button class="btn2" onclick="renewDoc('${k}')">تجديد 30 يوم</button> <button class="btn2" onclick="copyLink('${k}')">نسخ اللينك</button></td></tr>`}).join('');
-document.getElementById('page-admin').innerHTML=`
-<div class="card"><h3>إدارة Omnia - عند أمنية بس</h3>
-<p>الدكتور بياخد شهر مجاني 30 يوم، السيستم بيقفل لوحده لما يخلص، وانتي تقدري تقفلي وتفتحي وتجددي من هنا.</p></div>
-<div class="card"><h3>إضافة دكتور جديد</h3>
-<div class="row"><input id="dName" placeholder="اسم الدكتور"><input id="dClinic" placeholder="اسم العيادة"></div>
-<div class="row"><input id="dPass" placeholder="باسورد الدكتور"><input id="dSecPass" placeholder="باسورد السكرتيرة"></div>
-<button class="btn" onclick="addDoctor()">إضافة دكتور + إنشاء لينك</button></div>
-<div class="card"><h3>كل الدكاترة</h3><table>${html||'<tr><td>لسه مفيش دكاترة</td></tr>'}</table></div>
-<div class="card"><h3>أمان السحابة</h3><p>البيانات بتتحفظ في السحابة Firebase: buba-clinic-app + نسخة على الجهاز. مفيش أي باسورد ظاهر بره الكود.</p><button class="btn2" onclick="syncCloud();alert('تم المزامنة مع السحابة')">مزامنة السحابة الآن</button></div>`;
-}
-function addDoctor(){
-let id='dr-'+Date.now().toString().slice(-5);
-DB.doctors=DB.doctors||{};
-DB.doctors[id]={doctorName:document.getElementById('dName').value||'دكتور',clinicName:document.getElementById('dClinic').value||'عيادة',doctorPass:document.getElementById('dPass').value||'1234',secretaryPass:document.getElementById('dSecPass').value||'1111',startDate:new Date().toISOString().slice(0,10),locked:false};
-save();renderAdmin();alert('تم إضافة الدكتور - اللينك بتاعه: '+location.origin+location.pathname+'?doc='+id+' - انسخيه من زرار نسخ اللينك');
-}
-function toggleLock(id){DB.doctors[id].locked=!DB.doctors[id].locked;save();renderAdmin();}
-function renewDoc(id){DB.doctors[id].startDate=new Date().toISOString().slice(0,10);DB.doctors[id].locked=false;save();renderAdmin();alert('تم التجديد 30 يوم جديد');}
-function copyLink(id){let link=location.origin+location.pathname+'?doc='+id;navigator.clipboard.writeText(link).then(()=>alert('تم نسخ اللينك: '+link));}
-// تحميل بيانات الدكتور من اللينك ?doc=...
-(function loadDoc(){
-let docId=new URLSearchParams(location.search).get('doc');
-if(docId && DB.doctors && DB.doctors[docId]){
-let d=DB.doctors[docId];
-if(d.locked){document.body.innerHTML='<div style="text-align:center;padding:60px"><h2>اشتراكك انتهى</h2><p>تواصل مع الإدارة للتجديد - Omnia Clinic</p></div>';return;}
-DB.settings={...DB.settings,doctorName:d.doctorName,clinicName:d.clinicName,doctorPass:d.doctorPass,secretaryPass:d.secretaryPass,startDate:d.startDate};
-}
-})();
-// PWA - تسجيل sw.js
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
-// تحميل من السحابة أول مرة لو الجهاز فاضي
-fetch('https://buba-clinic-app-default-rtdb.firebaseio.com/omnia_v2.json').then(r=>r.json()).then(d=>{if(d && !localStorage.getItem('omnia_v2')){DB=d;localStorage.setItem('omnia_v2',JSON.stringify(DB));}}).catch(()=>{});
-</script>
-  <style>
-/* تظبيط القايمة - تبقى على جنب وتتفتح وتتقفل */
-.sidebar{
-  position:fixed!important;
-  top:0; right:0; bottom:0;
-  width:230px!important;
-  z-index:999!important;
-  background:#0B3D91!important;
-  transition:transform .3s ease!important;
-  overflow-y:auto!important;
-  padding-top:10px!important;
-}
-.main{
-  margin-right:0!important;
-  width:100%!important;
-  padding:12px!important;
-  box-sizing:border-box!important;
-}
-.header{
-  display:flex!important;
-  align-items:center!important;
-  gap:8px!important;
-  flex-wrap:wrap!important;
-}
-/* زرار القايمة */
-#menuBtn{
-  display:inline-block!important;
-  background:#0B3D91!important;
-  color:#fff!important;
-  border:none!important;
-  padding:8px 14px!important;
-  border-radius:8px!important;
-  font-size:18px!important;
-  cursor:pointer!important;
-}
-/* في الكمبيوتر القايمة ثابتة، في الموبايل مستخبية */
-@media(min-width:769px){
-  .sidebar{transform:translateX(0)!important}
-  .main{margin-right:230px!important;width:calc(100% - 230px)!important}
-  #menuBtn{display:none!important}
-}
-@media(max-width:768px){
-  .sidebar{transform:translateX(100%)!important}
-  .sidebar.open{transform:translateX(0)!important}
-  .main{margin-right:0!important}
-}
-</style>
-
-<script>
-// كود واحد: إخفاء الإدارة + إخفاء الحضور من عند الدكتور + تظبيط القايمة
-(function(){
-  // 1. زرار القايمة
-  let header = document.querySelector('.header') || document.body;
-  if(!document.getElementById('menuBtn')){
-    let btn = document.createElement('button');
-    btn.id = 'menuBtn';
-    btn.textContent = '☰ القايمة';
-    btn.onclick = function(){
-      let sb = document.querySelector('.sidebar');
-      if(sb) sb.classList.toggle('open');
-    };
-    header.prepend(btn);
-  }
-  // لما تدوسي على أي اختيار في القايمة، القايمة تقفل لوحدها في الموبايل
-  document.querySelectorAll('.sidebar *').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      if(window.innerWidth<=768){
-        let sb = document.querySelector('.sidebar');
-        if(sb) sb.classList.remove('open');
-      }
-    });
-  });
-
-  // 2. إخفاء الإدارة والحضور
-  let isAdmin = new URLSearchParams(location.search).get('admin') === '1';
-  // بنعرف اللي داخل دكتور ولا سكرتيرة من اللي اختاره في الدخول
-  let role = (localStorage.getItem('omnia_role') || localStorage.getItem('role') || sessionStorage.getItem('role') || '').toLowerCase();
-  // لو مش متسجل، بنعتبر إن اللي فتح v2.html لوحده دكتور
-  let isDoctor = isAdmin ? false : (role==='' || role==='doctor' || role==='دكتور' || role.includes('doc'));
-
-  function hideMenu(text){
-    document.querySelectorAll('.sidebar *').forEach(el=>{
-      if(el.children.length===0 && el.textContent.trim()===text){
-        let item = el;
-        // اطلعي لحد الزرار الأب
-        for(let i=0;i<3;i++){ if(item.parentElement && item.parentElement.classList.contains('sidebar')) break; if(item.parentElement) item=item.parentElement; }
-        item.style.display='none';
-        el.style.display='none';
-      }
-    });
-  }
-
-  // الإدارة: تظهر عند الإدارة بس
-  if(!isAdmin) hideMenu('الإدارة');
-  // الحضور: يظهر عند السكرتيرة بس، يختفي من عند الدكتور
-  if(isDoctor) hideMenu('الحضور');
-
-})();
-</script>
-  <style>
-#omniaTop{
-  position:fixed!important; top:60px!important; right:8px!important; left:8px!important;
-  z-index:9999!important; display:flex!important; gap:6px!important;
-}
-#omniaTop button{
-  flex:1!important; background:#0B3D91!important; color:#fff!important;
-  border:none!important; padding:13px!important; border-radius:20px!important;
-  font-size:15px!important; font-weight:bold!important;
-  box-shadow:0 4px 10px rgba(0,0,0,.3)!important;
-}
-#omniaInstall{
-  position:fixed!important; bottom:15px!important; right:15px!important; left:15px!important;
-  z-index:9999!important; background:#25D366!important; color:#fff!important;
-  border:none!important; padding:15px!important; border-radius:25px!important;
-  font-size:16px!important; font-weight:bold!important;
-  box-shadow:0 4px 12px rgba(0,0,0,.3)!important;
-}
-.sidebar.open, nav.open, .menu-open .sidebar{
-  display:block!important; transform:none!important; left:0!important; right:0!important;
-}
-</style>
-
-<div id="omniaTop">
-  <button onclick="toggleOmniaMenu()">☰ الرئيسية - افتحي القايمة</button>
+<div id="inventory" class="card hidden">
+<h2 data-t="inventory">المخزون</h2>
+<div class="row"><input id="iName" placeholder="اسم الصنف"><input id="iQty" type="number" placeholder="الكمية"><input id="iPrice" type="number" placeholder="سعر الوحدة"></div>
+<button class="btn" onclick="addItem()" data-t="addItem">إضافة صنف</button>
+<div id="invList"></div>
 </div>
-
-<button id="omniaInstall">⬇️ نزّل التطبيق على الشاشة</button>
-
+<div id="expenses" class="card hidden">
+<h2 data-t="expenses">المصروفات اليدوية</h2>
+<div class="row"><select id="eType"><option>كهرباء</option><option>مياه</option><option>غاز</option><option>إيجار</option><option>نظافة</option><option>أخرى</option></select><input id="eAmt" type="number" placeholder="المبلغ"><input id="eNote" placeholder="ملاحظة"></div>
+<button class="btn" onclick="addExpense()" data-t="addExpense">إضافة مصروف</button>
+<div id="expList"></div>
+  </div>
+  <div id="attendance" class="card hidden">
+<h2 data-t="attendance">الحضور والغياب - للسكرتيرة فقط</h2>
+<div class="row"><input id="aName" placeholder="اسم السكرتيرة"><select id="aStatus"><option>حضور</option><option>غياب</option><option>إجازة</option></select></div>
+<button class="btn" onclick="addAttendance()" data-t="saveAtt">تسجيل الحضور</button>
+<div id="attList"></div>
+</div>
+<div id="reports" class="card hidden">
+<h2 data-t="reports">التقارير - للطبيب فقط</h2>
+<div class="kpi"><div><span data-t="income">الدخل الفعلي</span><b id="rIncome">0</b></div><div><span data-t="exp">المصروفات</span><b id="rExp">0</b></div><div><span data-t="net">صافي الدخل</span><b id="rNet">0</b></div><div><span data-t="debt">المبالغ المستحقة</span><b id="rDebt">0</b></div></div>
+<h3 data-t="debts">المرضى الذين عليهم مبالغ مستحقة</h3><div id="debtList"></div>
+<h3 data-t="attReport">تقرير الحضور والغياب</h3><div id="attReport"></div>
+<h3 data-t="byMonth">الدخل حسب الشهر</h3><div id="monthList"></div>
+</div>
+<div id="settings" class="card hidden">
+<h2 data-t="settings">الإعدادات - للطبيب فقط</h2>
+<input id="sName" placeholder="اسم السكرتيرة الجديدة"><input id="sPass" type="password" placeholder="كلمة مرور السكرتيرة">
+<button class="btn" onclick="addSecretary()" data-t="addSec">إضافة سكرتيرة</button>
+<div id="secList"></div>
+</div>
+</div></div></div>
 <script>
-function toggleOmniaMenu(){
-  let side = document.querySelector('.sidebar') || document.querySelector('nav') || document.querySelector('aside');
-  if(side){
-    side.classList.toggle('open');
-    side.style.display = side.classList.contains('open') ? 'block' : 'none';
-    side.style.position = 'fixed';
-    side.style.top = '110px';
-    side.style.right = '8px';
-    side.style.left = '8px';
-    side.style.zIndex = '9998';
-    side.style.background = '#fff';
-    side.style.borderRadius = '14px';
-    side.style.boxShadow = '0 4px 15px rgba(0,0,0,.25)';
-    side.style.padding = '10px';
-  } else {
-    alert('القايمة هتظهر هنا - دوسي رجوع وافتحي الصفحة من الأول');
-    window.scrollTo(0,0);
-  }
-  // لو دوسنا على أي حاجة في القايمة، اقفل القايمة
-  document.querySelectorAll('.sidebar a, .sidebar button, nav a').forEach(el=>{
-    el.onclick = ()=>{ setTimeout(()=>{ if(side) side.style.display='none'; }, 200); };
-  });
+const firebaseConfig={apiKey:"AIzaSyC_PF2THIRdiK_Fi2lY7QelrpI4yqniFa4",authDomain:"buba-clinic-app.firebaseapp.com",projectId:"buba-clinic-app",storageBucket:"buba-clinic-app.firebasestorage.app",messagingSenderId:"403832390931",appId:"1:403832390931:web:907f24b3b74083324106e6",measurementId:"G-Z1ZPNRQF0W"};
+firebase.initializeApp(firebaseConfig); const db=firebase.firestore();
+let role='',doctorCode=new URLSearchParams(location.search).get('doctor')||'عام',patients=[],inv=[],exps=[],atts=[],currentPatient=null,lang='ar';
+const T={ar:{menu:'القائمة',logout:'تسجيل الخروج',patients:'المرضى',inventory:'المخزون',expenses:'المصروفات',attendance:'الحضور والغياب',reports:'التقارير',settings:'الإعدادات',loginTitle:'تسجيل الدخول إلى العيادة',loginSub:'كلمة المرور غير مكتوبة في الكود، ويتم إدخالها من قبل الطبيب فقط',enter:'دخول',firstTime:'أول مرة؟ يقوم الطبيب بإنشاء كلمة مرور:',savePass:'حفظ كلمة مرور الطبيب',addPatient:'إضافة مريض',addItem:'إضافة صنف',addExpense:'إضافة مصروف',saveAtt:'تسجيل الحضور',income:'الدخل الفعلي',exp:'المصروفات',net:'صافي الدخل',debt:'المبالغ المستحقة',debts:'المرضى الذين عليهم مبالغ مستحقة',attReport:'تقرير الحضور والغياب',byMonth:'الدخل حسب الشهر',addSec:'إضافة سكرتيرة'},en:{menu:'Menu',logout:'Logout',patients:'Patients',inventory:'Inventory',expenses:'Expenses',attendance:'Attendance',reports:'Reports',settings:'Settings',loginTitle:'Clinic Login',loginSub:'Password is not written in code',enter:'Enter',firstTime:'First time? Doctor creates password:',savePass:'Save Doctor Password',addPatient:'Add Patient',addItem:'Add Item',addExpense:'Add Expense',saveAtt:'Save Attendance',income:'Real Income',exp:'Expenses',net:'Net Income',debt:'Debts',debts:'Patients with Debts',attReport:'Attendance Report',byMonth:'Income by Month',addSec:'Add Secretary'}};
+function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l=='ar'?'rtl':'ltr';document.querySelectorAll('[data-t]').forEach(e=>{let k=e.getAttribute('data-t'); if(T[l][k]) e.innerText=T[l][k]});}
+function toggleSide(){document.getElementById('side').classList.toggle('hide')}
+function show(id){['patients','inventory','expenses','attendance','reports','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden'); if(window.innerWidth<700) toggleSide();}
+async function setFirstPass(){let p=document.getElementById('newPass').value; if(!p) return alert('يرجى كتابة كلمة المرور'); await db.collection('config').doc('doctor_'+doctorCode).set({pass:p}); alert('تم الحفظ');}
+async function checkSub(){let snap=await db.collection('doctors').where('code','==',doctorCode).get(); if(snap.empty) return true; let d=snap.docs[0].data(); if(d.manualLock||d.endDate<Date.now()){document.getElementById('subMsg').innerText='انتهى الاشتراك، يرجى التواصل مع الإدارة من أجل التجديد'; return false;} return true;}
+async function doLogin(){if(!(await checkSub())) return; let r=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value; let doc=await db.collection('config').doc(r=='doctor'?'doctor_'+doctorCode:'secretaries_'+doctorCode).get(); let ok=false; if(r=='doctor'){ok=doc.exists&&doc.data().pass==p;}else{let list=doc.exists?doc.data().list:[]; ok=list.some(x=>x.pass==p);} if(!ok) return alert('كلمة المرور غير صحيحة'); role=r; document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); if(role!='doctor'){document.getElementById('settingsBtn').style.display='none'; document.getElementById('repBtn').style.display='none';} if(role!='secretary'){document.getElementById('attBtn').style.display='none';} listenAll();}
+function logout(){location.reload()}
+async function addSecretary(){let n=document.getElementById('sName').value,p=document.getElementById('sPass').value; if(!n||!p) return alert('يرجى إكمال البيانات'); let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; list.push({name:n,pass:p}); await ref.set({list}); renderSecs(list);}
+function renderSecs(list){document.getElementById('secList').innerHTML=list.map(s=>`<div>${s.name} <button onclick="copyText('${s.name}')">نسخ</button></div>`).join('')}
+function copyText(t){navigator.clipboard.writeText(t); alert('تم النسخ');}
+function listenAll(){
+ db.collection('patients').where('doctorCode','==',doctorCode).onSnapshot(s=>{patients=s.docs.map(d=>({id:d.id,...d.data()})); renderPatients(); renderReports();});
+ db.collection('inventory').where('doctorCode','==',doctorCode).onSnapshot(s=>{inv=s.docs.map(d=>({id:d.id,...d.data()})); renderInv(); renderReports();});
+ db.collection('expenses').where('doctorCode','==',doctorCode).onSnapshot(s=>{exps=s.docs.map(d=>({id:d.id,...d.data()})); renderExp(); renderReports();});
+ db.collection('attendance').where('doctorCode','==',doctorCode).onSnapshot(s=>{atts=s.docs.map(d=>({id:d.id,...d.data()})); renderAtt(); renderReports();});
+ db.collection('config').doc('secretaries_'+doctorCode).onSnapshot(s=>{if(s.exists) renderSecs(s.data().list||[])});
 }
-
-// زرار التنزيل على الشاشة - PWA
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
-document.getElementById('omniaInstall').onclick = async ()=>{
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    let choice = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    if(choice.outcome==='accepted') alert('اتثبّت ✅ هتلاقيه على الشاشة');
-  } else {
-    // للآيفون والأندرويد اللي مفيهوش تنزيل تلقائي
-    alert('عشان ينزل على الشاشة:\n\nلو آيفون: دوسي على زرار المشاركة تحت ⬆️ > إضافة إلى الشاشة الرئيسية > إضافة\n\nلو أندرويد: دوسي على ⋮ فوق > إضافة إلى الشاشة الرئيسية > تثبيت');
-  }
-};
+  async function addPatient(){let n=document.getElementById('pName').value,ph=document.getElementById('pPhone').value,age=+document.getElementById('pAge').value||0,tot=+document.getElementById('pTotal').value||0,notes=document.getElementById('pNotes').value; if(!n) return alert('يرجى كتابة اسم المريض'); await db.collection('patients').add({doctorCode,name:n,phone:ph,age,total:tot,notes,teeth:{},visits:[],created:Date.now(),month:new Date().toISOString().slice(0,7)}); ['pName','pPhone','pAge','pTotal','pNotes'].forEach(id=>document.getElementById(id).value='');}
+function renderPatients(){document.getElementById('patientList').innerHTML=patients.map(p=>{let paid=(p.visits||[]).reduce((a,v)=>a+(+v.paid||0),0); let left=p.total-paid; return `<div class="card"><b>${p.name}</b> - العمر ${p.age} - الإجمالي ${p.total} - المدفوع ${paid} - المتبقي <b style="color:#f87171">${left}</b><br><button class="blue" onclick="openPatient('${p.id}')">فتح الملف</button> <button onclick="copyText('${p.name} - ${p.phone}')">نسخ</button> <button class="red" onclick="db.collection('patients').doc('${p.id}').delete()">حذف</button></div>`}).join('')}
+function teethList(age){if(age<=12){return [55,54,53,52,51,61,62,63,64,65,85,84,83,82,81,71,72,73,74,75]} return [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28,48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38]}
+function openPatient(id){currentPatient=patients.find(p=>p.id==id); let p=currentPatient; let paid=(p.visits||[]).reduce((a,v)=>a+(+v.paid||0),0); let cls={'حشو':'t-fill','خلع':'t-ext','زراعة':'t-imp','تقويم':'t-ortho','تنظيف':'t-clean'}; let teethHtml=teethList(p.age).map(n=>{let t=(p.teeth||{})[n]||''; return `<div class="tooth ${cls[t]||''}" onclick="setTooth(${n})">${n}<small>${t||'سليم'}</small></div>`}).join(''); let visitsHtml=(p.visits||[]).map((v,i)=>`<div class="card">الزيارة ${i+1} - المدفوع ${v.paid||0} - ${v.note||''}</div>`).join(''); document.getElementById('patientFile').innerHTML=`<div class="card"><h3>ملف ${p.name} - ${p.phone} - العمر ${p.age}</h3><p>المبلغ الإجمالي ${p.total} | المدفوع ${paid} | المتبقي ${p.total-paid}</p><h4>خريطة الأسنان - ${p.age<=12?'أطفال: 20 سناً':'بالغون: 32 سناً'} - اضغط على السن</h4><div class="grid">${teethHtml}</div><h4>الزيارات</h4>${visitsHtml}<input id="vNote" placeholder="ما الذي تم إنجازه في هذه الزيارة؟"><input id="vPaid" type="number" placeholder="المبلغ المدفوع في هذه الزيارة، 0 إذا لم يدفع"><button class="btn" onclick="addVisit()">إضافة زيارة</button></div>`; window.scrollTo(0,document.body.scrollHeight);}
+async function setTooth(n){let t=prompt('اكتب العلاج: حشو / خلع / زراعة / تقويم / تنظيف / سليم'); if(t===null) return; let teeth={...(currentPatient.teeth||{})}; if(t=='سليم') delete teeth[n]; else teeth[n]=t; await db.collection('patients').doc(currentPatient.id).update({teeth});}
+async function addVisit(){let note=document.getElementById('vNote').value, paid=+document.getElementById('vPaid').value||0; let visits=[...(currentPatient.visits||[]),{note,paid,date:Date.now()}]; await db.collection('patients').doc(currentPatient.id).update({visits}); openPatient(currentPatient.id);}
+async function addItem(){let n=document.getElementById('iName').value,q=+document.getElementById('iQty').value||0,pr=+document.getElementById('iPrice').value||0; if(!n) return; await db.collection('inventory').add({doctorCode,name:n,qty:q,price:pr,used:0});}
+function renderInv(){document.getElementById('invList').innerHTML=inv.map(i=>`<div class="card">${i.name} - الكمية ${i.qty} - المستهلك ${i.used||0} - المتبقي ${i.qty-(i.used||0)} - سعر الوحدة ${i.price} - مصروفه ${(i.used||0)*i.price}<br><button onclick="useItem('${i.id}',${i.used||0})">استهلاك واحد -1</button> <button onclick="copyText('${i.name}')">نسخ</button> <button class="red" onclick="db.collection('inventory').doc('${i.id}').delete()">حذف</button></div>`).join('')}
+async function useItem(id,used){await db.collection('inventory').doc(id).update({used:used+1})}
+async function addExpense(){let t=document.getElementById('eType').value,a=+document.getElementById('eAmt').value||0,note=document.getElementById('eNote').value; await db.collection('expenses').add({doctorCode,type:t,amount:a,note,month:new Date().toISOString().slice(0,7),date:Date.now()});}
+function renderExp(){document.getElementById('expList').innerHTML=exps.map(e=>`<div>${e.type} - ${e.amount} - ${e.note||''}</div>`).join('')}
+async function addAttendance(){let n=document.getElementById('aName').value,s=document.getElementById('aStatus').value; await db.collection('attendance').add({doctorCode,name:n,status:s,date:new Date().toLocaleDateString()});}
+function renderAtt(){document.getElementById('attList').innerHTML=atts.map(a=>`<div>${a.name} - ${a.status} - ${a.date}</div>`).join('')}
+function renderReports(){let income=patients.reduce((a,p)=>a+(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0),0); let debt=patients.reduce((a,p)=>a+(p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)),0); let expManual=exps.reduce((a,e)=>a+(+e.amount||0),0); let expInv=inv.reduce((a,i)=>a+((i.used||0)*i.price),0); let totalExp=expManual+expInv; document.getElementById('rIncome').innerText=income; document.getElementById('rExp').innerText=totalExp; document.getElementById('rNet').innerText=income-totalExp; document.getElementById('rDebt').innerText=debt; document.getElementById('debtList').innerHTML=patients.filter(p=>p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)>0).map(p=>`<div>${p.name} عليه ${p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)} <button onclick="copyText('${p.name} عليه ${p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)}')">نسخ</button></div>`).join('')||'لا توجد ديون'; document.getElementById('attReport').innerHTML=atts.map(a=>`<div>${a.name} - ${a.status} - ${a.date}</div>`).join('')||'لا توجد سجلات'; let by={}; patients.forEach(p=>{let m=p.month||''; by[m]=(by[m]||0)+(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)}); document.getElementById('monthList').innerHTML=Object.entries(by).map(([m,v])=>`<div>${m} : ${v}</div>`).join('');}
+setLang('ar');
 </script>
 </body>
 </html>
