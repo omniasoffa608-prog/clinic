@@ -266,5 +266,104 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 // تحميل من السحابة أول مرة لو الجهاز فاضي
 fetch('https://buba-clinic-app-default-rtdb.firebaseio.com/omnia_v2.json').then(r=>r.json()).then(d=>{if(d && !localStorage.getItem('omnia_v2')){DB=d;localStorage.setItem('omnia_v2',JSON.stringify(DB));}}).catch(()=>{});
 </script>
+  <style>
+/* تظبيط القايمة - تبقى على جنب وتتفتح وتتقفل */
+.sidebar{
+  position:fixed!important;
+  top:0; right:0; bottom:0;
+  width:230px!important;
+  z-index:999!important;
+  background:#0B3D91!important;
+  transition:transform .3s ease!important;
+  overflow-y:auto!important;
+  padding-top:10px!important;
+}
+.main{
+  margin-right:0!important;
+  width:100%!important;
+  padding:12px!important;
+  box-sizing:border-box!important;
+}
+.header{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+}
+/* زرار القايمة */
+#menuBtn{
+  display:inline-block!important;
+  background:#0B3D91!important;
+  color:#fff!important;
+  border:none!important;
+  padding:8px 14px!important;
+  border-radius:8px!important;
+  font-size:18px!important;
+  cursor:pointer!important;
+}
+/* في الكمبيوتر القايمة ثابتة، في الموبايل مستخبية */
+@media(min-width:769px){
+  .sidebar{transform:translateX(0)!important}
+  .main{margin-right:230px!important;width:calc(100% - 230px)!important}
+  #menuBtn{display:none!important}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(100%)!important}
+  .sidebar.open{transform:translateX(0)!important}
+  .main{margin-right:0!important}
+}
+</style>
+
+<script>
+// كود واحد: إخفاء الإدارة + إخفاء الحضور من عند الدكتور + تظبيط القايمة
+(function(){
+  // 1. زرار القايمة
+  let header = document.querySelector('.header') || document.body;
+  if(!document.getElementById('menuBtn')){
+    let btn = document.createElement('button');
+    btn.id = 'menuBtn';
+    btn.textContent = '☰ القايمة';
+    btn.onclick = function(){
+      let sb = document.querySelector('.sidebar');
+      if(sb) sb.classList.toggle('open');
+    };
+    header.prepend(btn);
+  }
+  // لما تدوسي على أي اختيار في القايمة، القايمة تقفل لوحدها في الموبايل
+  document.querySelectorAll('.sidebar *').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      if(window.innerWidth<=768){
+        let sb = document.querySelector('.sidebar');
+        if(sb) sb.classList.remove('open');
+      }
+    });
+  });
+
+  // 2. إخفاء الإدارة والحضور
+  let isAdmin = new URLSearchParams(location.search).get('admin') === '1';
+  // بنعرف اللي داخل دكتور ولا سكرتيرة من اللي اختاره في الدخول
+  let role = (localStorage.getItem('omnia_role') || localStorage.getItem('role') || sessionStorage.getItem('role') || '').toLowerCase();
+  // لو مش متسجل، بنعتبر إن اللي فتح v2.html لوحده دكتور
+  let isDoctor = isAdmin ? false : (role==='' || role==='doctor' || role==='دكتور' || role.includes('doc'));
+
+  function hideMenu(text){
+    document.querySelectorAll('.sidebar *').forEach(el=>{
+      if(el.children.length===0 && el.textContent.trim()===text){
+        let item = el;
+        // اطلعي لحد الزرار الأب
+        for(let i=0;i<3;i++){ if(item.parentElement && item.parentElement.classList.contains('sidebar')) break; if(item.parentElement) item=item.parentElement; }
+        item.style.display='none';
+        el.style.display='none';
+      }
+    });
+  }
+
+  // الإدارة: تظهر عند الإدارة بس
+  if(!isAdmin) hideMenu('الإدارة');
+  // الحضور: يظهر عند السكرتيرة بس، يختفي من عند الدكتور
+  if(isDoctor) hideMenu('الحضور');
+
+})();
+</script>
 </body>
 </html>
