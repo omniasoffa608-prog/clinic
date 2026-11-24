@@ -102,5 +102,28 @@ function delDoc(i){
 }
 if(sessionStorage.getItem('omnia_admin')==='ok') show();
 </script>
+  <style>
+#adminInstall{
+  position:fixed!important; bottom:15px!important; right:15px!important; left:15px!important;
+  z-index:9999!important; background:#25D366!important; color:#fff!important;
+  border:none!important; padding:15px!important; border-radius:25px!important;
+  font-size:16px!important; font-weight:bold!important;
+  box-shadow:0 4px 12px rgba(0,0,0,.3)!important;
+}
+</style>
+<button id="adminInstall">⬇️ نزّلي لوحة أمنية على الشاشة</button>
+<script>
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
+document.getElementById('adminInstall').onclick = async ()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  } else {
+    alert('عشان تنزلي لوحة أمنية على الشاشة:\n\nلو آيفون: دوسي على زرار المشاركة تحت ⬆️ > إضافة إلى الشاشة الرئيسية > إضافة\n\nلو أندرويد: دوسي على ⋮ فوق > إضافة إلى الشاشة الرئيسية > تثبيت');
+  }
+};
+</script>
 </body>
 </html>
