@@ -128,5 +128,10 @@ function renderAtt(){document.getElementById('attList').innerHTML=atts.map(a=>`<
 function renderReports(){let income=patients.reduce((a,p)=>a+(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0),0); let debt=patients.reduce((a,p)=>a+(p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)),0); let expManual=exps.reduce((a,e)=>a+(+e.amount||0),0); let expInv=inv.reduce((a,i)=>a+((i.used||0)*i.price),0); let totalExp=expManual+expInv; document.getElementById('rIncome').innerText=income; document.getElementById('rExp').innerText=totalExp; document.getElementById('rNet').innerText=income-totalExp; document.getElementById('rDebt').innerText=debt; document.getElementById('debtList').innerHTML=patients.filter(p=>p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)>0).map(p=>`<div>${p.name} عليه ${p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)} <button onclick="copyText('${p.name} عليه ${p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)}')">نسخ</button></div>`).join('')||'لا توجد ديون'; document.getElementById('attReport').innerHTML=atts.map(a=>`<div>${a.name} - ${a.status} - ${a.date}</div>`).join('')||'لا توجد سجلات'; let by={}; patients.forEach(p=>{let m=p.month||''; by[m]=(by[m]||0)+(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)}); document.getElementById('monthList').innerHTML=Object.entries(by).map(([m,v])=>`<div>${m} : ${v}</div>`).join('');}
 setLang('ar');
 </script>
+  <script>
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
+</script>
+</body>
+</html>
 </body>
 </html>
