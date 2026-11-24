@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>لوحة أمنية - الإدارة</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 body{font-family:sans-serif;background:#f0f2f5;padding:12px;margin:0}
 .card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
@@ -12,18 +14,19 @@ input{width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:1
 button{background:#0B3D91;color:#fff;border:none;padding:12px;border-radius:10px;width:100%;font-weight:bold;cursor:pointer;margin:4px 0;font-size:15px}
 .doc{background:#f8f9ff;border:1px solid #dde;padding:12px;border-radius:10px;margin:8px 0}
 .small{font-size:13px;color:#666}
-.green{background:#25D366}
-.red{background:#c00}
+.green{background:#25D366}.red{background:#c00}.orange{background:#f59e0b}
+.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:bold}.on{background:#dcfce7}.off{background:#fee2e2}
 </style>
 </head>
 <body>
-
 <div id="login" class="card">
   <h1>👩‍💼 أهلاً يا أمنية</h1>
   <p>دي لوحة الإدارة بتاعتك انتي بس</p>
   <input id="pass" type="password" placeholder="اكتبي باسورد الإدارة">
   <button onclick="login()">دخول الإدارة</button>
-  <p class="small">الباسورد: 9999</p>
+  <p class="small">أول مرة؟ اعملي باسورد الإدارة:</p>
+  <input id="newPass" type="password" placeholder="باسورد جديد للإدارة">
+  <button onclick="setAdminPass()">حفظ باسورد الإدارة</button>
 </div>
 
 <div id="panel" style="display:none">
@@ -33,97 +36,48 @@ button{background:#0B3D91;color:#fff;border:none;padding:12px;border-radius:10px
     <p><b>عدد الدكاترة:</b> <span id="count">0</span></p>
     <button onclick="logout()" class="red" style="width:auto;padding:8px 16px">خروج</button>
   </div>
-
   <div class="card">
     <h3>➕ أضيفي دكتور جديد - أول شهر مجاني</h3>
+    <input id="dPhone" placeholder="رقم تليفون الدكتور">
     <input id="dName" placeholder="اسم الدكتور - مثال: أحمد">
+    <input id="dClinic" placeholder="اسم العيادة - مثال: عيادة بوبا">
     <input id="dSpec" placeholder="التخصص - مثال: أسنان">
-    <input id="dPass" placeholder="باسورد الدكتور - مثال: 1234">
+    <input id="dPass" type="password" placeholder="باسورد الدكتور - مثال: 1234">
     <button onclick="addDoctor()">إضافة الدكتور + اعملي لينكه</button>
   </div>
-
-  <div class="card">
-    <h3>👨‍⚕️ الدكاترة عندك</h3>
-    <div id="list"></div>
-  </div>
+  <div class="card"><h3>👨‍⚕️ الدكاترة عندك</h3><div id="list"></div></div>
 </div>
 
 <script>
-function login(){
-  if(document.getElementById('pass').value==='9999'){
-    sessionStorage.setItem('omnia_admin','ok'); show();
-  } else alert('الباسورد غلط');
+const firebaseConfig={apiKey:"AIzaSyC_PF2THIRdiK_Fi2lY7QelrpI4yqniFa4",authDomain:"buba-clinic-app.firebaseapp.com",projectId:"buba-clinic-app",storageBucket:"buba-clinic-app.firebasestorage.app",messagingSenderId:"403832390931",appId:"1:403832390931:web:907f24b3b74083324106e6",measurementId:"G-Z1ZPNRQF0W"};
+firebase.initializeApp(firebaseConfig); const db=firebase.firestore();
+async function setAdminPass(){let p=document.getElementById('newPass').value; if(!p) return alert('اكتبي باسورد'); await db.collection('config').doc('superadmin').set({pass:p}); alert('اتحفظ ✅');}
+async function login(){let p=document.getElementById('pass').value; let d=await db.collection('config').doc('superadmin').get(); if(!d.exists||d.data().pass!=p) return alert('الباسورد غلط'); sessionStorage.setItem('omnia_admin','ok'); show();}
+function logout(){sessionStorage.removeItem('omnia_admin'); location.reload();}
+function show(){document.getElementById('login').style.display='none'; document.getElementById('panel').style.display='block'; listen();}
+function listen(){db.collection('doctors').onSnapshot(s=>{render(s.docs.map(d=>({id:d.id,...d.data()})))});}
+async function addDoctor(){
+  let phone=document.getElementById('dPhone').value.trim(), n=document.getElementById('dName').value.trim(), clinic=document.getElementById('dClinic').value.trim(), spec=document.getElementById('dSpec').value.trim(), p=document.getElementById('dPass').value.trim();
+  if(!n||!p||!phone) return alert('اكتبي تليفون واسم الدكتور والباسورد');
+  let code=n.replace(/\s+/g,'-'); let now=Date.now(); let end=now+30*86400000;
+  await db.collection('doctors').add({phone,name:n,clinic,spec,pass:p,code,endDate:end,startDate:now,manualLock:false});
+  ['dPhone','dName','dClinic','dSpec','dPass'].forEach(id=>document.getElementById(id).value='');
+  alert('اتضاف ✅ شهره المجاني لحد '+new Date(end).toLocaleDateString('ar-EG'));
 }
-function logout(){ sessionStorage.removeItem('omnia_admin'); location.reload(); }
-function show(){
-  document.getElementById('login').style.display='none';
-  document.getElementById('panel').style.display='block';
-  render();
-}
-function getDocs(){ return JSON.parse(localStorage.getItem('omnia_doctors')||'[]'); }
-function addDoctor(){
-  let n=document.getElementById('dName').value.trim();
-  let s=document.getElementById('dSpec').value.trim();
-  let p=document.getElementById('dPass').value.trim();
-  if(!n||!p) return alert('اكتبي اسم الدكتور والباسورد');
-  let d=getDocs();
-  let code=n.replace(/\s+/g,'-');
-  let end=new Date(); end.setDate(end.getDate()+30);
-  d.push({name:n,spec:s,pass:p,code:code,end:end.toLocaleDateString('ar-EG')});
-  localStorage.setItem('omnia_doctors',JSON.stringify(d));
-  document.getElementById('dName').value='';
-  document.getElementById('dSpec').value='';
-  document.getElementById('dPass').value='';
-  render();
-  alert('اتضاف ✅ شهره المجاني لحد '+end.toLocaleDateString('ar-EG'));
-}
-function render(){
-  let d=getDocs();
-  document.getElementById('count').textContent=d.length;
-  if(!d.length){ document.getElementById('list').innerHTML='لسه مفيش دكاترة، ضيفي أول دكتور فوق'; return; }
-  document.getElementById('list').innerHTML=d.map((x,i)=>{
+function render(docs){
+  document.getElementById('count').textContent=docs.length;
+  if(!docs.length){document.getElementById('list').innerHTML='لسه مفيش دكاترة، ضيفي أول دكتور فوق'; return;}
+  document.getElementById('list').innerHTML=docs.map(x=>{
+    let left=Math.ceil((x.endDate-Date.now())/86400000); let active=left>0 && !x.manualLock;
     let link=location.origin+location.pathname.replace('admin.html','v2.html')+'?doctor='+encodeURIComponent(x.code);
-    let waMsg=encodeURIComponent('أهلاً دكتور '+x.name+' 🌸\nده لينك السيستم بتاع حضرتك:\n'+link+'\nالباسورد: '+x.pass+'\nأول شهر مجاني لحد '+x.end+'\nنزّل التطبيق من زرار ⬇️ نزّل التطبيق');
-    return `<div class="doc">
-      <b>${x.name}</b> - ${x.spec||''}<br>
-      <span class="small">باسورد: ${x.pass} | مجاني لحد: ${x.end}</span><br><br>
-      <input value="${link}" readonly>
-      <button onclick="navigator.clipboard.writeText('${link}');alert('لينك الدكتور اتنسخ ✅')">📋 نسخ لينك الدكتور</button>
-      <button class="green" onclick="window.open('https://wa.me/?text=${waMsg}','_blank')">💬 ابعتي له على الواتساب</button>
-      <button class="red" onclick="delDoc(${i})">حذف الدكتور</button>
-    </div>`;
+    let waMsg=encodeURIComponent('أهلاً دكتور '+x.name+' 🌸\nده لينك السيستم بتاع حضرتك:\n'+link+'\nالباسورد: '+x.pass+'\nأول شهر مجاني لحد '+new Date(x.endDate).toLocaleDateString('ar-EG'));
+    return `<div class="doc"><b>${x.name}</b> - ${x.clinic||''} - ${x.spec||''}<br><span class="small">📞 ${x.phone} | باسورد: •••• | مجاني لحد: ${new Date(x.endDate).toLocaleDateString('ar-EG')}</span><br><span class="badge ${active?'on':'off'}">${active?'شغال - فاضل '+left+' يوم':'مقفول - خلص'}</span><br><br><input value="${link}" readonly><button onclick="navigator.clipboard.writeText('${link}');alert('لينك الدكتور اتنسخ ✅')">📋 نسخ لينك الدكتور</button><button class="green" onclick="window.open('https://wa.me/?text=${waMsg}','_blank')">💬 ابعتي له على الواتساب</button><button class="orange" onclick="renew('${x.id}')">🔄 تجديد 30 يوم</button><button onclick="toggleLock('${x.id}',${!x.manualLock})">${x.manualLock?'🔓 افتح للدكتور':'🔒 اقفل للدكتور'}</button><button class="red" onclick="delDoc('${x.id}')">حذف الدكتور</button></div>`;
   }).join('');
 }
-function delDoc(i){
-  if(!confirm('متأكدة تحذفي الدكتور ده؟')) return;
-  let d=getDocs(); d.splice(i,1);
-  localStorage.setItem('omnia_doctors',JSON.stringify(d));
-  render();
-}
+async function renew(id){let d=await db.collection('doctors').doc(id).get(); let base=d.data().endDate>Date.now()?d.data().endDate:Date.now(); await db.collection('doctors').doc(id).update({endDate:base+30*86400000,manualLock:false}); alert('اتجدد 30 يوم ✅');}
+async function toggleLock(id,open){await db.collection('doctors').doc(id).update({manualLock:!open});}
+async function delDoc(id){if(!confirm('متأكدة تحذفي الدكتور ده؟')) return; await db.collection('doctors').doc(id).delete();}
 if(sessionStorage.getItem('omnia_admin')==='ok') show();
-</script>
-  <style>
-#adminInstall{
-  position:fixed!important; bottom:15px!important; right:15px!important; left:15px!important;
-  z-index:9999!important; background:#25D366!important; color:#fff!important;
-  border:none!important; padding:15px!important; border-radius:25px!important;
-  font-size:16px!important; font-weight:bold!important;
-  box-shadow:0 4px 12px rgba(0,0,0,.3)!important;
-}
-</style>
-<button id="adminInstall">⬇️ نزّلي لوحة أمنية على الشاشة</button>
-<script>
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; });
-document.getElementById('adminInstall').onclick = async ()=>{
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-  } else {
-    alert('عشان تنزلي لوحة أمنية على الشاشة:\n\nلو آيفون: دوسي على زرار المشاركة تحت ⬆️ > إضافة إلى الشاشة الرئيسية > إضافة\n\nلو أندرويد: دوسي على ⋮ فوق > إضافة إلى الشاشة الرئيسية > تثبيت');
-  }
-};
 </script>
 </body>
 </html>
