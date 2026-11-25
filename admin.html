@@ -60,7 +60,7 @@ async function addDoctor(){
   let phone=document.getElementById('dPhone').value.trim(), n=document.getElementById('dName').value.trim(), clinic=document.getElementById('dClinic').value.trim(), spec=document.getElementById('dSpec').value.trim(), p=document.getElementById('dPass').value.trim();
   if(!n||!p||!phone) return alert('اكتبي تليفون واسم الدكتور والباسورد');
   let code=n.replace(/\s+/g,'-'); let now=Date.now(); let end=now+30*86400000;
-  await db.collection('doctors').add({phone,name:n,clinic,spec,pass:p,code,endDate:end,startDate:now,manualLock:false});
+  await db.collection('doctors').add({phone,name:n,clinic,spec,pass:p,code,endDate:end,startDate:now,manualLock:false,type:'trial'});
   ['dPhone','dName','dClinic','dSpec','dPass'].forEach(id=>document.getElementById(id).value='');
   alert('اتضاف ✅ شهره المجاني لحد '+new Date(end).toLocaleDateString('ar-EG'));
 }
@@ -68,13 +68,18 @@ function render(docs){
   document.getElementById('count').textContent=docs.length;
   if(!docs.length){document.getElementById('list').innerHTML='لسه مفيش دكاترة، ضيفي أول دكتور فوق'; return;}
   document.getElementById('list').innerHTML=docs.map(x=>{
-    let left=Math.ceil((x.endDate-Date.now())/86400000); let active=left>0 && !x.manualLock;
+    let isPermanent = x.type==='permanent';
+    let left = isPermanent ? 9999 : Math.ceil((x.endDate-Date.now())/86400000);
+    let active = isPermanent ? !x.manualLock : (left>0 && !x.manualLock);
+    let statusText = x.manualLock ? 'مقفول بإيدك 🔒' : isPermanent ? 'مفتوح على طول ✅' : active ? 'شغال - فاضل '+left+' يوم' : 'مقفول - خلص';
     let link=location.origin+location.pathname.replace('admin.html','v2.html')+'?doctor='+encodeURIComponent(x.code);
-    let waMsg=encodeURIComponent('أهلاً دكتور '+x.name+' 🌸\nده لينك السيستم بتاع حضرتك:\n'+link+'\nالباسورد: '+x.pass+'\nأول شهر مجاني لحد '+new Date(x.endDate).toLocaleDateString('ar-EG'));
-    return `<div class="doc"><b>${x.name}</b> - ${x.clinic||''} - ${x.spec||''}<br><span class="small">📞 ${x.phone} | باسورد: •••• | مجاني لحد: ${new Date(x.endDate).toLocaleDateString('ar-EG')}</span><br><span class="badge ${active?'on':'off'}">${active?'شغال - فاضل '+left+' يوم':'مقفول - خلص'}</span><br><br><input value="${link}" readonly><button onclick="navigator.clipboard.writeText('${link}');alert('لينك الدكتور اتنسخ ✅')">📋 نسخ لينك الدكتور</button><button class="green" onclick="window.open('https://wa.me/?text=${waMsg}','_blank')">💬 ابعتي له على الواتساب</button><button class="orange" onclick="renew('${x.id}')">🔄 تجديد 30 يوم</button><button onclick="toggleLock('${x.id}',${!x.manualLock})">${x.manualLock?'🔓 افتح للدكتور':'🔒 اقفل للدكتور'}</button><button class="red" onclick="delDoc('${x.id}')">حذف الدكتور</button></div>`;
+    let waMsg=encodeURIComponent('أهلاً دكتور '+x.name+' 🌸\nده لينك السيستم بتاع حضرتك:\n'+link+'\nالباسورد: '+x.pass+'\n'+(isPermanent ? 'اشتراكك مفتوح على طول ✅' : 'أول شهر مجاني لحد '+new Date(x.endDate).toLocaleDateString('ar-EG')));
+    let dateText = isPermanent ? 'مفتوح على طول' : 'مجاني لحد: '+new Date(x.endDate).toLocaleDateString('ar-EG');
+    return `<div class="doc"><b>${x.name}</b> - ${x.clinic||''} - ${x.spec||''}<br><span class="small">📞 ${x.phone} | باسورد: •••• | ${dateText}</span><br><span class="badge ${active?'on':'off'}">${statusText}</span><br><br><input value="${link}" readonly><button onclick="navigator.clipboard.writeText('${link}');alert('لينك الدكتور اتنسخ ✅')">📋 نسخ لينك الدكتور</button><button class="green" onclick="window.open('https://wa.me/?text=${waMsg}','_blank')">💬 ابعتي له على الواتساب</button><button class="orange" onclick="renew('${x.id}')">🔄 تجديد 30 يوم</button><button style="background:#7c3aed" onclick="makePermanent('${x.id}')">♾️ مفتوح على طول</button><button onclick="toggleLock('${x.id}',${!x.manualLock})">${x.manualLock?'🔓 افتح للدكتور':'🔒 اقفل للدكتور'}</button><button class="red" onclick="delDoc('${x.id}')">حذف الدكتور</button></div>`;
   }).join('');
 }
-async function renew(id){let d=await db.collection('doctors').doc(id).get(); let base=d.data().endDate>Date.now()?d.data().endDate:Date.now(); await db.collection('doctors').doc(id).update({endDate:base+30*86400000,manualLock:false}); alert('اتجدد 30 يوم ✅');}
+async function renew(id){let d=await db.collection('doctors').doc(id).get(); let base=d.data().endDate>Date.now()?d.data().endDate:Date.now(); await db.collection('doctors').doc(id).update({endDate:base+30*86400000,manualLock:false,type:'trial'}); alert('اتجدد 30 يوم ✅');}
+async function makePermanent(id){if(!confirm('تخلي الدكتور ده مفتوح على طول؟')) return; await db.collection('doctors').doc(id).update({type:'permanent',manualLock:false,endDate:null}); alert('بقى مفتوح على طول ✅');}
 async function toggleLock(id,open){await db.collection('doctors').doc(id).update({manualLock:!open});}
 async function delDoc(id){if(!confirm('متأكدة تحذفي الدكتور ده؟')) return; await db.collection('doctors').doc(id).delete();}
 if(sessionStorage.getItem('omnia_admin')==='ok') show();
