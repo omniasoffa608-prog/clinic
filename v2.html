@@ -22,12 +22,13 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 .row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
 .hidden{display:none}.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .kpi div{background:#0f172a;padding:12px;border-radius:12px;text-align:center}.kpi b{font-size:22px;display:block}
+.welcome{background:linear-gradient(90deg,#0B3D91,#22c55e);padding:14px;border-radius:14px;margin-bottom:12px;font-size:18px;font-weight:800}
 @media(max-width:700px){.side{position:fixed;z-index:20;height:100vh}}
 </style>
 </head>
 <body>
 <div class="top">
-<button onclick="toggleSide()">☰ <span data-t="menu">القائمة</span></button><b>نظام العيادة</b><span style="flex:1"></span>
+<button onclick="toggleSide()">☰ <span data-t="menu">القائمة</span></button><b>نظام العيادة</b><span id="topDoctor" style="font-size:13px;opacity:.9"></span><span style="flex:1"></span>
 <button onclick="setLang('ar')">العربية</button><button onclick="setLang('en')">English</button>
 <button onclick="logout()">🚪 <span data-t="logout">تسجيل الخروج</span></button>
 </div>
@@ -42,6 +43,7 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 </div>
 <div class="main">
 <div class="card" id="loginCard">
+<h2 id="loginWelcome">👋 أهلاً بيك في نظام العيادة</h2>
 <h2 data-t="loginTitle">تسجيل الدخول إلى العيادة</h2>
 <p data-t="loginSub">كلمة المرور غير مكتوبة في الكود، ويتم إدخالها من قبل الطبيب فقط</p>
 <select id="loginRole"><option value="doctor">طبيب / Doctor</option><option value="secretary">سكرتيرة / Secretary</option></select>
@@ -53,14 +55,15 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 <div id="subMsg" style="color:#f87171;margin-top:8px"></div>
 </div>
 <div id="app" class="hidden">
+<div id="welcomeBox" class="welcome"></div>
 <div id="patients" class="card">
 <h2 data-t="patients">المرضى</h2>
 <div class="row"><input id="pName" placeholder="اسم المريض"><input id="pPhone" placeholder="رقم الهاتف"><input id="pAge" type="number" placeholder="العمر"><input id="pTotal" type="number" placeholder="المبلغ الإجمالي"></div>
 <textarea id="pNotes" placeholder="ملاحظات"></textarea>
 <button class="btn" onclick="addPatient()" data-t="addPatient">إضافة مريض</button>
 <div id="patientList"></div><div id="patientFile"></div>
-  </div>
-  <div id="inventory" class="card hidden">
+</div>
+<div id="inventory" class="card hidden">
 <h2 data-t="inventory">المخزون</h2>
 <div class="row"><input id="iName" placeholder="اسم الصنف"><input id="iQty" type="number" placeholder="الكمية"><input id="iPrice" type="number" placeholder="سعر الوحدة"></div>
 <button class="btn" onclick="addItem()" data-t="addItem">إضافة صنف</button>
@@ -87,6 +90,15 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 </div>
 <div id="settings" class="card hidden">
 <h2 data-t="settings">الإعدادات - للطبيب فقط</h2>
+<h3>👨‍⚕️ بيانات الدكتور والعيادة - تقدر تعدلها</h3>
+<input id="dEditName" placeholder="اسم الدكتور">
+<input id="dEditClinic" placeholder="اسم العيادة">
+<input id="dEditSpec" placeholder="التخصص">
+<input id="dEditPhone" placeholder="رقم تليفون الدكتور">
+<input id="dEditPass" type="password" placeholder="باسورد الدكتور - سيبه فاضي لو مش عايز تغيره">
+<button class="btn" onclick="saveDoctorInfo()">💾 حفظ تعديل بيانات الدكتور والعيادة</button>
+<hr>
+<h3>👩‍💼 إضافة سكرتيرة</h3>
 <input id="sName" placeholder="اسم السكرتيرة الجديدة"><input id="sPass" type="password" placeholder="كلمة مرور السكرتيرة">
 <button class="btn" onclick="addSecretary()" data-t="addSec">إضافة سكرتيرة</button>
 <div id="secList"></div>
@@ -95,14 +107,18 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 <script>
 const firebaseConfig={apiKey:"AIzaSyC_PF2THIRdiK_Fi2lY7QelrpI4yqniFa4",authDomain:"buba-clinic-app.firebaseapp.com",projectId:"buba-clinic-app",storageBucket:"buba-clinic-app.firebasestorage.app",messagingSenderId:"403832390931",appId:"1:403832390931:web:907f24b3b74083324106e6",measurementId:"G-Z1ZPNRQF0W"};
 firebase.initializeApp(firebaseConfig); const db=firebase.firestore();
-let role='',doctorCode=new URLSearchParams(location.search).get('doctor')||'عام',patients=[],inv=[],exps=[],atts=[],currentPatient=null,lang='ar';
+let role='',doctorCode=new URLSearchParams(location.search).get('doctor')||'عام',patients=[],inv=[],exps=[],atts=[],currentPatient=null,lang='ar',doctorInfo=null,doctorDocId=null,currentSecName='';
 const T={ar:{menu:'القائمة',logout:'تسجيل الخروج',patients:'المرضى',inventory:'المخزون',expenses:'المصروفات',attendance:'الحضور والغياب',reports:'التقارير',settings:'الإعدادات',loginTitle:'تسجيل الدخول إلى العيادة',loginSub:'كلمة المرور غير مكتوبة في الكود، ويتم إدخالها من قبل الطبيب فقط',enter:'دخول',firstTime:'أول مرة؟ يقوم الطبيب بإنشاء كلمة مرور:',savePass:'حفظ كلمة مرور الطبيب',addPatient:'إضافة مريض',addItem:'إضافة صنف',addExpense:'إضافة مصروف',saveAtt:'تسجيل الحضور',income:'الدخل الفعلي',exp:'المصروفات',net:'صافي الدخل',debt:'المبالغ المستحقة',debts:'المرضى الذين عليهم مبالغ مستحقة',attReport:'تقرير الحضور والغياب',byMonth:'الدخل حسب الشهر',addSec:'إضافة سكرتيرة'},en:{menu:'Menu',logout:'Logout',patients:'Patients',inventory:'Inventory',expenses:'Expenses',attendance:'Attendance',reports:'Reports',settings:'Settings',loginTitle:'Clinic Login',loginSub:'Password is not written in code',enter:'Enter',firstTime:'First time? Doctor creates password:',savePass:'Save Doctor Password',addPatient:'Add Patient',addItem:'Add Item',addExpense:'Add Expense',saveAtt:'Save Attendance',income:'Real Income',exp:'Expenses',net:'Net Income',debt:'Debts',debts:'Patients with Debts',attReport:'Attendance Report',byMonth:'Income by Month',addSec:'Add Secretary'}};
-function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l=='ar'?'rtl':'ltr';document.querySelectorAll('[data-t]').forEach(e=>{let k=e.getAttribute('data-t'); if(T[l][k]) e.innerText=T[l][k]});}
+function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l=='ar'?'rtl':'ltr';document.querySelectorAll('[data-t]').forEach(e=>{let k=e.getAttribute('data-t'); if(T[l][k]) e.innerText=T[l][k]}); updateWelcomeTexts();}
+function updateWelcomeTexts(){if(doctorInfo){document.getElementById('topDoctor').innerText=' - '+doctorInfo.name+' | '+doctorInfo.clinic; document.getElementById('loginWelcome').innerText=lang=='ar'?'👋 أهلاً دكتور '+doctorInfo.name+' - '+doctorInfo.clinic:'👋 Hello Dr. '+doctorInfo.name+' - '+doctorInfo.clinic;} if(role){showWelcome();}}
+function showWelcome(){let el=document.getElementById('welcomeBox'); if(!el) return; if(role=='doctor'){el.innerText=lang=='ar'?'🌸 مرحباً دكتور '+(doctorInfo?doctorInfo.name:'')+' - '+(doctorInfo?doctorInfo.clinic:''):'🌸 Hello Dr. '+(doctorInfo?doctorInfo.name:'')+' - '+(doctorInfo?doctorInfo.clinic:'');} else {el.innerText=lang=='ar'?'🌸 مرحباً يا سكرتيرة '+currentSecName+' - عيادة '+(doctorInfo?doctorInfo.clinic:'')+' - دكتور '+(doctorInfo?doctorInfo.name:''):'🌸 Hello '+currentSecName+' - Clinic '+(doctorInfo?doctorInfo.clinic:'')+' - Dr. '+(doctorInfo?doctorInfo.name:'');}}
+async function loadDoctorInfo(){let snap=await db.collection('doctors').where('code','==',doctorCode).get(); if(!snap.empty){doctorDocId=snap.docs[0].id; doctorInfo=snap.docs[0].data(); document.getElementById('dEditName').value=doctorInfo.name||''; document.getElementById('dEditClinic').value=doctorInfo.clinic||''; document.getElementById('dEditSpec').value=doctorInfo.spec||''; document.getElementById('dEditPhone').value=doctorInfo.phone||''; updateWelcomeTexts();}}
+async function saveDoctorInfo(){if(!doctorDocId) return alert('مش لاقي بيانات الدكتور'); let n=document.getElementById('dEditName').value.trim(), c=document.getElementById('dEditClinic').value.trim(), s=document.getElementById('dEditSpec').value.trim(), ph=document.getElementById('dEditPhone').value.trim(), pw=document.getElementById('dEditPass').value.trim(); if(!n) return alert('اكتب اسم الدكتور'); await db.collection('doctors').doc(doctorDocId).update({name:n,clinic:c,spec:s,phone:ph}); if(pw){await db.collection('doctors').doc(doctorDocId).update({pass:pw}); await db.collection('config').doc('doctor_'+doctorCode).set({pass:pw});} doctorInfo={...doctorInfo,name:n,clinic:c,spec:s,phone:ph}; updateWelcomeTexts(); alert(lang=='ar'?'اتحفظ ✅ تم تعديل بيانات الدكتور والعيادة':'Saved ✅');}
 function toggleSide(){document.getElementById('side').classList.toggle('hide')}
 function show(id){['patients','inventory','expenses','attendance','reports','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden'); if(window.innerWidth<700) toggleSide();}
 async function setFirstPass(){let p=document.getElementById('newPass').value; if(!p) return alert('يرجى كتابة كلمة المرور'); await db.collection('config').doc('doctor_'+doctorCode).set({pass:p}); alert('تم الحفظ');}
 async function checkSub(){let snap=await db.collection('doctors').where('code','==',doctorCode).get(); if(snap.empty) return true; let d=snap.docs[0].data(); if(d.type==='permanent') return true; if(d.manualLock||!d.endDate||d.endDate<Date.now()){document.getElementById('subMsg').innerText='انتهى الاشتراك، يرجى التواصل مع الإدارة من أجل التجديد'; return false;} return true;}
-async function doLogin(){if(!(await checkSub())) return; let r=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value; let doc=await db.collection('config').doc(r=='doctor'?'doctor_'+doctorCode:'secretaries_'+doctorCode).get(); let ok=false; if(r=='doctor'){ok=doc.exists&&doc.data().pass==p;}else{let list=doc.exists?doc.data().list:[]; ok=list.some(x=>x.pass==p);} if(!ok) return alert('كلمة المرور غير صحيحة'); role=r; document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); if(role!='doctor'){document.getElementById('settingsBtn').style.display='none'; document.getElementById('repBtn').style.display='none';} if(role!='secretary'){document.getElementById('attBtn').style.display='none';} listenAll();}
+async function doLogin(){if(!(await checkSub())) return; let r=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value; let doc=await db.collection('config').doc(r=='doctor'?'doctor_'+doctorCode:'secretaries_'+doctorCode).get(); let ok=false; let secFound=null; if(r=='doctor'){ok=doc.exists&&doc.data().pass==p;}else{let list=doc.exists?doc.data().list:[]; secFound=list.find(x=>x.pass==p); ok=!!secFound; if(secFound) currentSecName=secFound.name;} if(!ok) return alert('كلمة المرور غير صحيحة'); role=r; document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); if(role!='doctor'){document.getElementById('settingsBtn').style.display='none'; document.getElementById('repBtn').style.display='none';} if(role!='secretary'){document.getElementById('attBtn').style.display='none';} showWelcome(); listenAll();}
 function logout(){location.reload()}
 async function addSecretary(){let n=document.getElementById('sName').value,p=document.getElementById('sPass').value; if(!n||!p) return alert('يرجى إكمال البيانات'); let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; list.push({name:n,pass:p}); await ref.set({list}); renderSecs(list);}
 function renderSecs(list){document.getElementById('secList').innerHTML=list.map(s=>`<div>${s.name} <button onclick="copyText('${s.name}')">نسخ</button></div>`).join('')}
@@ -115,7 +131,7 @@ function listenAll(){
  db.collection('attendance').where('doctorCode','==',doctorCode).onSnapshot(s=>{atts=s.docs.map(d=>({id:d.id,...d.data()})); renderAtt(); renderReports();});
  db.collection('config').doc('secretaries_'+doctorCode).onSnapshot(s=>{if(s.exists) renderSecs(s.data().list||[])});
 }
- async function addPatient(){let n=document.getElementById('pName').value,ph=document.getElementById('pPhone').value,age=+document.getElementById('pAge').value||0,tot=+document.getElementById('pTotal').value||0,notes=document.getElementById('pNotes').value; if(!n) return alert('يرجى كتابة اسم المريض'); await db.collection('patients').add({doctorCode,name:n,phone:ph,age,total:tot,notes,teeth:{},visits:[],created:Date.now(),month:new Date().toISOString().slice(0,7)}); ['pName','pPhone','pAge','pTotal','pNotes'].forEach(id=>document.getElementById(id).value='');}
+  async function addPatient(){let n=document.getElementById('pName').value,ph=document.getElementById('pPhone').value,age=+document.getElementById('pAge').value||0,tot=+document.getElementById('pTotal').value||0,notes=document.getElementById('pNotes').value; if(!n) return alert('يرجى كتابة اسم المريض'); await db.collection('patients').add({doctorCode,name:n,phone:ph,age,total:tot,notes,teeth:{},visits:[],created:Date.now(),month:new Date().toISOString().slice(0,7)}); ['pName','pPhone','pAge','pTotal','pNotes'].forEach(id=>document.getElementById(id).value='');}
 function renderPatients(){document.getElementById('patientList').innerHTML=patients.map(p=>{let paid=(p.visits||[]).reduce((a,v)=>a+(+v.paid||0),0); let left=p.total-paid; return `<div class="card"><b>${p.name}</b> - العمر ${p.age} - الإجمالي ${p.total} - المدفوع ${paid} - المتبقي <b style="color:#f87171">${left}</b><br><button class="blue" onclick="openPatient('${p.id}')">فتح الملف</button> <button style="background:#25D366;color:#fff" onclick="openWhatsApp('${p.phone}','${p.name}')">💬 واتساب</button> <button onclick="copyText('${p.name} - ${p.phone}')">نسخ</button> <button class="red" onclick="db.collection('patients').doc('${p.id}').delete()">حذف</button></div>`}).join('')}
 function teethList(age){if(age<=12){return [55,54,53,52,51,61,62,63,64,65,85,84,83,82,81,71,72,73,74,75]} return [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28,48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38]}
 function openPatient(id){currentPatient=patients.find(p=>p.id==id); let p=currentPatient; let paid=(p.visits||[]).reduce((a,v)=>a+(+v.paid||0),0); let cls={'حشو':'t-fill','خلع':'t-ext','زراعة':'t-imp','تقويم':'t-ortho','تنظيف':'t-clean'}; let teethHtml=teethList(p.age).map(n=>{let t=(p.teeth||{})[n]||''; return `<div class="tooth ${cls[t]||''}" onclick="setTooth(${n})">${n}<small>${t||'سليم'}</small></div>`}).join(''); let visitsHtml=(p.visits||[]).map((v,i)=>`<div class="card">الزيارة ${i+1} - المدفوع ${v.paid||0} - ${v.note||''}</div>`).join(''); document.getElementById('patientFile').innerHTML=`<div class="card"><h3>ملف ${p.name} - ${p.phone} - العمر ${p.age}</h3><p>المبلغ الإجمالي ${p.total} | المدفوع ${paid} | المتبقي ${p.total-paid}</p><h4>خريطة الأسنان - ${p.age<=12?'أطفال: 20 سناً':'بالغون: 32 سناً'} - اضغط على السن</h4><div class="grid">${teethHtml}</div><h4>الزيارات</h4>${visitsHtml}<input id="vNote" placeholder="ما الذي تم إنجازه في هذه الزيارة؟"><input id="vPaid" type="number" placeholder="المبلغ المدفوع في هذه الزيارة، 0 إذا لم يدفع"><button class="btn" onclick="addVisit()">إضافة زيارة</button></div>`; window.scrollTo(0,document.body.scrollHeight);}
@@ -129,10 +145,11 @@ function renderExp(){document.getElementById('expList').innerHTML=exps.map(e=>`<
 async function addAttendance(){let n=document.getElementById('aName').value,s=document.getElementById('aStatus').value; await db.collection('attendance').add({doctorCode,name:n,status:s,date:new Date().toLocaleDateString()});}
 function renderAtt(){document.getElementById('attList').innerHTML=atts.map(a=>`<div>${a.name} - ${a.status} - ${a.date}</div>`).join('')}
 function renderReports(){let income=patients.reduce((a,p)=>a+(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0),0); let debt=patients.reduce((a,p)=>a+(p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)),0); let expManual=exps.reduce((a,e)=>a+(+e.amount||0),0); let expInv=inv.reduce((a,i)=>a+((i.used||0)*i.price),0); let totalExp=expManual+expInv; document.getElementById('rIncome').innerText=income; document.getElementById('rExp').innerText=totalExp; document.getElementById('rNet').innerText=income-totalExp; document.getElementById('rDebt').innerText=debt; document.getElementById('debtList').innerHTML=patients.filter(p=>p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)>0).map(p=>`<div>${p.name} عليه ${p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)} <button onclick="copyText('${p.name} عليه ${p.total-(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)}')">نسخ</button></div>`).join('')||'لا توجد ديون'; document.getElementById('attReport').innerHTML=atts.map(a=>`<div>${a.name} - ${a.status} - ${a.date}</div>`).join('')||'لا توجد سجلات'; let by={}; patients.forEach(p=>{let m=p.month||''; by[m]=(by[m]||0)+(p.visits||[]).reduce((x,v)=>x+(+v.paid||0),0)}); document.getElementById('monthList').innerHTML=Object.entries(by).map(([m,v])=>`<div>${m} : ${v}</div>`).join('');}
+loadDoctorInfo();
 setLang('ar');
 </script>
 <script>
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
-</html> 
+</html>
