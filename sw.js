@@ -1,5 +1,5 @@
 // Omnia Clinic V2 - Service Worker - بيحفظ السيستم ويشغله من غير نت
-const CACHE_NAME = 'omnia-v2-cache-v4';
+const CACHE_NAME = 'omnia-v2-cache-v5';
 const FILES_TO_CACHE = [
   'v2.html',
   'admin.html',
