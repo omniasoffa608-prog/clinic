@@ -47,7 +47,7 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 <h2 data-t="loginTitle">تسجيل الدخول إلى العيادة</h2>
 <p data-t="loginSub">كلمة المرور غير مكتوبة في الكود، ويتم إدخالها من قبل الطبيب فقط</p>
 <select id="loginRole"><option value="doctor">طبيب / Doctor</option><option value="secretary">سكرتيرة / Secretary</option></select>
-<input id="loginPass" type="password" placeholder="•••• كلمة المرور">
+<input id="loginPass" type="password" placeholder="•••• كلمة المرور - اكتبها بالانجليزي" autocomplete="new-password" inputmode="numeric" lang="en">
 <button class="btn" onclick="doLogin()" data-t="enter">دخول</button>
 <div id="subMsg" style="color:#f87171;margin-top:8px"></div>
 </div>
@@ -80,46 +80,27 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 </div>
 <div id="reports" class="card hidden">
 <h2 data-t="reports">التقارير - للطبيب فقط</h2>
-<div class="kpi"><div><span data-t="income">الدخل الفعلي</span><b id="rIncome">0</b></div><div><span data-t="exp">المصروفات</span><b id="rExp">0</b></div><div><span data-t="net">صافي الدخل</span><b id="rNet">0</b></div><div><span data-t="debt">المبالغ المستحقة</span><b id="rDebt">0</b></div></div>
-<h3 data-t="debts">المرضى الذين عليهم مبالغ مستحقة</h3><div id="debtList"></div>
-<h3 data-t="attReport">تقرير الحضور والغياب</h3><div id="attReport"></div>
-<h3 data-t="byMonth">الدخل حسب الشهر</h3><div id="monthList"></div>
-</div>
-<div id="settings" class="card hidden">
-<h2 data-t="settings">الإعدادات - للطبيب فقط</h2>
-<h3>👨‍⚕️ بيانات الدكتور والعيادة - تقدر تعدلها</h3>
-<input id="dEditName" placeholder="اسم الدكتور">
-<input id="dEditClinic" placeholder="اسم العيادة">
-<input id="dEditSpec" placeholder="التخصص">
-<input id="dEditPhone" placeholder="رقم تليفون الدكتور">
-<input id="dEditPass" type="password" placeholder="باسورد الدكتور - سيبه فاضي لو مش عايز تغيره">
-<button class="btn" onclick="saveDoctorInfo()">💾 حفظ تعديل بيانات الدكتور والعيادة</button>
-<hr>
-<h3>👩‍💼 إضافة سكرتيرة</h3>
-<input id="sName" placeholder="اسم السكرتيرة الجديدة"><input id="sPass" type="password" placeholder="كلمة مرور السكرتيرة">
-<button class="btn" onclick="addSecretary()" data-t="addSec">إضافة سكرتيرة</button>
-<div id="secList"></div>
-</div>
-</div></div></div>
-<script>
+<div class="kpi"><div><span data-t="income">الدخل الفعلي</span><b id="rIncome">0</b></div><div><span data-t="exp">المصروفات</span><b id="rExp">0</b></div><div><span data-t="net
+                                                                                                                                <script>
 const firebaseConfig={apiKey:"AIzaSyC_PF2THIRdiK_Fi2lY7QelrpI4yqniFa4",authDomain:"buba-clinic-app.firebaseapp.com",projectId:"buba-clinic-app",storageBucket:"buba-clinic-app.firebasestorage.app",messagingSenderId:"403832390931",appId:"1:403832390931:web:907f24b3b74083324106e6",measurementId:"G-Z1ZPNRQF0W"};
 firebase.initializeApp(firebaseConfig); const db=firebase.firestore();
 try{ db.enablePersistence({synchronizeTabs:true}).catch(e=>{console.log('persistence',e.code)}); }catch(e){}
 let role='',doctorCode=new URLSearchParams(location.search).get('doctor')||'عام',patients=[],inv=[],exps=[],atts=[],currentPatient=null,lang='ar',doctorInfo=null,doctorDocId=null,currentSecName='';
+function normNum(s){return String(s||'').replace(/[٠-٩]/g,d=>'0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]).replace(/[۰-۹]/g,d=>'0123456789'['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)]).trim();}
 const T={ar:{menu:'القائمة',logout:'تسجيل الخروج',patients:'المرضى',inventory:'المخزون',expenses:'المصروفات',attendance:'الحضور والغياب',reports:'التقارير',settings:'الإعدادات',loginTitle:'تسجيل الدخول إلى العيادة',loginSub:'كلمة المرور غير مكتوبة في الكود، ويتم إدخالها من قبل الطبيب فقط',enter:'دخول',addPatient:'إضافة مريض',addItem:'إضافة صنف',addExpense:'إضافة مصروف',saveAtt:'تسجيل الحضور',income:'الدخل الفعلي',exp:'المصروفات',net:'صافي الدخل',debt:'المبالغ المستحقة',debts:'المرضى الذين عليهم مبالغ مستحقة',attReport:'تقرير الحضور والغياب',byMonth:'الدخل حسب الشهر',addSec:'إضافة سكرتيرة'},en:{menu:'Menu',logout:'Logout',patients:'Patients',inventory:'Inventory',expenses:'Expenses',attendance:'Attendance',reports:'Reports',settings:'Settings',loginTitle:'Clinic Login',loginSub:'Password is not written in code',enter:'Enter',addPatient:'Add Patient',addItem:'Add Item',addExpense:'Add Expense',saveAtt:'Save Attendance',income:'Real Income',exp:'Expenses',net:'Net Income',debt:'Debts',debts:'Patients with Debts',attReport:'Attendance Report',byMonth:'Income by Month',addSec:'Add Secretary'}};
 function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=l=='ar'?'rtl':'ltr';document.querySelectorAll('[data-t]').forEach(e=>{let k=e.getAttribute('data-t'); if(T[l][k]) e.innerText=T[l][k]}); updateWelcomeTexts();}
 function updateWelcomeTexts(){if(doctorInfo){document.getElementById('topDoctor').innerText=' - '+doctorInfo.name+' | '+doctorInfo.clinic; document.getElementById('loginWelcome').innerText=lang=='ar'?'👋 أهلاً دكتور '+doctorInfo.name+' - '+doctorInfo.clinic:'👋 Hello Dr. '+doctorInfo.name+' - '+doctorInfo.clinic;} if(role){showWelcome();}}
 function showWelcome(){let el=document.getElementById('welcomeBox'); if(!el) return; if(role=='doctor'){el.innerText=lang=='ar'?'🌸 مرحباً دكتور '+(doctorInfo?doctorInfo.name:'')+' - '+(doctorInfo?doctorInfo.clinic:''):'🌸 Hello Dr. '+(doctorInfo?doctorInfo.name:'')+' - '+(doctorInfo?doctorInfo.clinic:'');} else {el.innerText=lang=='ar'?'🌸 مرحباً يا سكرتيرة '+currentSecName+' - عيادة '+(doctorInfo?doctorInfo.clinic:'')+' - دكتور '+(doctorInfo?doctorInfo.name:''):'🌸 Hello '+currentSecName+' - Clinic '+(doctorInfo?doctorInfo.clinic:'')+' - Dr. '+(doctorInfo?doctorInfo.name:'');}}
 async function loadDoctorInfo(){let snap=await db.collection('doctors').where('code','==',doctorCode).get(); if(!snap.empty){doctorDocId=snap.docs[0].id; doctorInfo=snap.docs[0].data(); document.getElementById('dEditName').value=doctorInfo.name||''; document.getElementById('dEditClinic').value=doctorInfo.clinic||''; document.getElementById('dEditSpec').value=doctorInfo.spec||''; document.getElementById('dEditPhone').value=doctorInfo.phone||''; updateWelcomeTexts();}}
-async function saveDoctorInfo(){if(!doctorDocId) return alert('مش لاقي بيانات الدكتور'); let n=document.getElementById('dEditName').value.trim(), c=document.getElementById('dEditClinic').value.trim(), s=document.getElementById('dEditSpec').value.trim(), ph=document.getElementById('dEditPhone').value.trim(), pw=document.getElementById('dEditPass').value.trim(); if(!n) return alert('اكتب اسم الدكتور'); await db.collection('doctors').doc(doctorDocId).update({name:n,clinic:c,spec:s,phone:ph}); if(pw){await db.collection('doctors').doc(doctorDocId).update({pass:pw}); await db.collection('config').doc('doctor_'+doctorCode).set({pass:pw}); document.getElementById('dEditPass').value='';} doctorInfo={...doctorInfo,name:n,clinic:c,spec:s,phone:ph}; updateWelcomeTexts(); alert(lang=='ar'?'اتحفظ ✅ تم تعديل بيانات الدكتور والعيادة':'Saved ✅');}
+async function saveDoctorInfo(){if(!doctorDocId) return alert('مش لاقي بيانات الدكتور'); let n=document.getElementById('dEditName').value.trim(), c=document.getElementById('dEditClinic').value.trim(), s=document.getElementById('dEditSpec').value.trim(), ph=document.getElementById('dEditPhone').value.trim(), pw=normNum(document.getElementById('dEditPass').value); if(!n) return alert('اكتب اسم الدكتور'); await db.collection('doctors').doc(doctorDocId).update({name:n,clinic:c,spec:s,phone:ph}); if(pw){await db.collection('doctors').doc(doctorDocId).update({pass:pw}); await db.collection('config').doc('doctor_'+doctorCode).set({pass:pw}); document.getElementById('dEditPass').value='';} doctorInfo={...doctorInfo,name:n,clinic:c,spec:s,phone:ph}; updateWelcomeTexts(); alert(lang=='ar'?'اتحفظ ✅ تم تعديل بيانات الدكتور والعيادة':'Saved ✅');}
 function toggleSide(){document.getElementById('side').classList.toggle('hide')}
 function show(id){['patients','inventory','expenses','attendance','reports','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden'); if(window.innerWidth<700) toggleSide();}
 async function checkSub(){let snap=await db.collection('doctors').where('code','==',doctorCode).get(); if(snap.empty) return true; let d=snap.docs[0].data(); if(d.type==='permanent') return true; if(d.manualLock||!d.endDate||d.endDate<Date.now()){document.getElementById('subMsg').innerText='انتهى الاشتراك، يرجى التواصل مع الإدارة من أجل التجديد'; return false;} return true;}
-async function doLogin(){if(!(await checkSub())) return; let r=document.getElementById('loginRole').value,p=document.getElementById('loginPass').value; let doc=await db.collection('config').doc(r=='doctor'?'doctor_'+doctorCode:'secretaries_'+doctorCode).get(); let ok=false; let secFound=null; if(r=='doctor'){ok=doc.exists&&doc.data().pass==p;}else{let list=doc.exists?doc.data().list:[]; secFound=list.find(x=>x.pass==p); ok=!!secFound; if(secFound) currentSecName=secFound.name;} if(!ok) return alert('كلمة المرور غير صحيحة'); role=r; document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); if(role!='doctor'){document.getElementById('settingsBtn').style.display='none'; document.getElementById('repBtn').style.display='none';} if(role!='secretary'){document.getElementById('attBtn').style.display='none';} showWelcome(); listenAll();}
+async function doLogin(){if(!(await checkSub())) return; let r=document.getElementById('loginRole').value,p=normNum(document.getElementById('loginPass').value); let doc=await db.collection('config').doc(r=='doctor'?'doctor_'+doctorCode:'secretaries_'+doctorCode).get(); let ok=false; let secFound=null; if(r=='doctor'){ok=doc.exists&&normNum(doc.data().pass)==p; if(!ok){let s2=await db.collection('doctors').where('code','==',doctorCode).get(); if(!s2.empty){let d2=s2.docs[0].data(); if(normNum(d2.pass)==p){ok=true; await db.collection('config').doc('doctor_'+doctorCode).set({pass:p});}}}}else{let list=doc.exists?doc.data().list:[]; secFound=list.find(x=>normNum(x.pass)==p); ok=!!secFound; if(secFound) currentSecName=secFound.name;} if(!ok) return alert('كلمة المرور غير صحيحة'); role=r; document.getElementById('loginCard').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); if(role!='doctor'){document.getElementById('settingsBtn').style.display='none'; document.getElementById('repBtn').style.display='none';} if(role!='secretary'){document.getElementById('attBtn').style.display='none';} showWelcome(); listenAll();}
 function logout(){location.reload()}
-async function addSecretary(){let n=document.getElementById('sName').value.trim(),p=document.getElementById('sPass').value; if(!n||!p) return alert('يرجى إكمال البيانات'); let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; list.push({name:n,pass:p}); await ref.set({list}); document.getElementById('sName').value=''; document.getElementById('sPass').value=''; renderSecs(list); alert('اتضافت ✅');}
+async function addSecretary(){let n=document.getElementById('sName').value.trim(),p=normNum(document.getElementById('sPass').value); if(!n||!p) return alert('يرجى إكمال البيانات'); let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; list.push({name:n,pass:p}); await ref.set({list}); document.getElementById('sName').value=''; document.getElementById('sPass').value=''; renderSecs(list); alert('اتضافت ✅');}
 function renderSecs(list){document.getElementById('secList').innerHTML=(list||[]).map((s,i)=>`<div class="card" style="padding:10px">${s.name} <button onclick="copyText('${s.name}')">نسخ</button> <button class="blue" onclick="editSecPass(${i})">✏️ تعديل الباسورد</button> <button class="red" onclick="deleteSec(${i})">🗑️ حذف</button></div>`).join('')||'مفيش سكرتيرات';}
-async function editSecPass(i){let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; if(!list[i]) return; let np=prompt('اكتب الباسورد الجديد لـ '+list[i].name); if(!np) return; list[i].pass=np; await ref.set({list}); renderSecs(list); alert('اتغير الباسورد ✅ - الباسورد القديم مش هيدخل تاني');}
+async function editSecPass(i){let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; if(!list[i]) return; let np=normNum(prompt('اكتب الباسورد الجديد لـ '+list[i].name)); if(!np) return; list[i].pass=np; await ref.set({list}); renderSecs(list); alert('اتغير الباسورد ✅ - الباسورد القديم مش هيدخل تاني');}
 async function deleteSec(i){let ref=db.collection('config').doc('secretaries_'+doctorCode); let d=await ref.get(); let list=d.exists?d.data().list:[]; if(!list[i]) return; if(!confirm('متأكدة تحذفي '+list[i].name+' ؟ مش هتعرف تدخل تاني')) return; list.splice(i,1); await ref.set({list}); renderSecs(list); alert('اتحذفت ✅');}
 function copyText(t){navigator.clipboard.writeText(t); alert('تم النسخ');}
 function openWhatsApp(phone,name){let ph=(phone||'').replace(/\D/g,''); if(!ph) return alert('مفيش رقم للمريض'); let p2=ph.startsWith('0')?'20'+ph.slice(1):ph; window.open('https://wa.me/'+p2+'?text='+encodeURIComponent('أهلاً '+name+' 🌸'),' _blank');}
@@ -152,4 +133,5 @@ setLang('ar');
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
-</html>
+ </html>
+ 
