@@ -1,3 +1,32 @@
+<textarea id="pNotes" placeholder="ملاحظات"></textarea>
+<button class="btn" onclick="addPatient()" data-t="addPatient">إضافة مريض</button>
+<div id="patientList"></div><div id="patientFile"></div>
+</div>
+<div id="inventory" class="card hidden">
+<h2 data-t="inventory">المخزون</h2>
+<div class="row"><input id="iName" placeholder="اسم الصنف"><input id="iQty" type="number" placeholder="الكمية"><input id="iPrice" type="number" placeholder="سعر الوحدة"></div>
+<button class="btn" onclick="addItem()" data-t="addItem">إضافة صنف</button>
+<div id="invList"></div>
+</div>
+<div id="expenses" class="card hidden">
+<h2 data-t="expenses">المصروفات اليدوية</h2>
+<div class="row"><select id="eType"><option>كهرباء</option><option>مياه</option><option>غاز</option><option>إيجار</option><option>نظافة</option><option>أخرى</option></select><input id="eAmt" type="number" placeholder="المبلغ"><input id="eNote" placeholder="ملاحظة"></div>
+<button class="btn" onclick="addExpense()" data-t="addExpense">إضافة مصروف</button>
+<div id="expList"></div>
+</div>
+<div id="attendance" class="card hidden">
+<h2 data-t="attendance">الحضور والغياب - للسكرتيرة فقط</h2>
+<div class="row"><input id="aName" placeholder="اسم السكرتيرة"><select id="aStatus"><option>حضور</option><option>غياب</option><option>إجازة</option></select></div>
+<button class="btn" onclick="addAttendance()" data-t="saveAtt">تسجيل الحضور</button>
+<div id="attList"></div>
+</div>
+<div id="reports" class="card hidden">
+<h2 data-t="reports">التقارير - للطبيب فقط</h2>
+<div class="kpi"><div><span data-t="income">الدخل الفعلي</span><b id="rIncome">0</b></div><div><span data-t="exp">المصروفات</span><b id="rExp">0</b></div><div><span data-t="net">صافي الدخل</span><b id="rNet">0</b></div><div><span data-t="debt">المبالغ المستحقة</span><b id="rDebt">0</b></div></div>
+<h3 data-t="debts">المرضى الذين عليهم مبالغ مستحقة</h3><div id="debtList"></div>
+<h3 data-t="attReport">تقرير الحضور والغياب</h3><div id="attReport"></div>
+<h3 data-t="byMonth">الدخل حسب الشهر</h3><div id="monthList"></div>
+</div>
 <button onclick="setFirstPass()" data-t="savePass">حفظ كلمة مرور الطبيب</button>
 <div id="subMsg" style="color:#f87171;margin-top:8px"></div>
 </div>
